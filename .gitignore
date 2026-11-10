@@ -1,0 +1,39 @@
+
+# 字节码与缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 虚拟环境
+venv/
+.venv/
+env/
+ENV/
+
+# 打包/构建产物
+build/
+dist/
+*.egg-info/
+*.egg
+
+# 测试与覆盖率
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Pygame 运行时产物（存档、日志、截图等）
+saves/
+logs/
+*.log
+screenshots/
+
+# PyInstaller 打包产物（若使用 PyInstaller 发布游戏）
+*.spec
+*.manifest
+
+.env
+.env.*
+config.ini
+secrets.json

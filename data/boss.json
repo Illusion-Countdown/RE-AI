@@ -1,0 +1,30 @@
+{
+  "total_hp": 2400,
+  "core_damage": 40,
+  "phases": [
+    {
+      "id": "canary",
+      "name": "灰度发布 Canary",
+      "hp_ratio": 1.0,
+      "behavior": "summon_mirrors",
+      "spawns": ["mirror", "mirror"],
+      "desc": "召唤 2 个你阵容的镜像（AI 型，70% 属性）；镜像全灭或 20 秒后进入下一阶段，阶段结束有 3 秒伤害 ×2 窗口。"
+    },
+    {
+      "id": "rollout",
+      "name": "全量发布 Rollout",
+      "hp_ratio": 0.66,
+      "behavior": "break_memory_spawn_bugs",
+      "spawns": ["bug", "cache_miss"],
+      "desc": "每 5 秒打碎 1 格内存，Bug 无限涌出；阶段结束同样有 3 秒伤害 ×2 窗口。"
+    },
+    {
+      "id": "circuit_breaker",
+      "name": "熔断 Circuit Breaker",
+      "hp_ratio": 0.33,
+      "behavior": "clear_buffs_dps_check",
+      "spawns": [],
+      "desc": "清空你所有 buff，进入 30 秒 DPS 检查：打掉 Boss 剩余 HP 的 40%，失败则全屏 AOE、核心 -40 HP。"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "C",
+    "name": "C",
+    "color": [91, 141, 239],
+    "rules": [
+      {"id": "raw_damage", "desc": "全场己方棋子伤害 +40%。"},
+      {"id": "out_of_bounds", "desc": "每次释放技能有 15% 概率越界，伤害打到自己人。"}
+    ],
+    "counters": {"硬件": 1.3},
+    "weak": {"内存": 0.8},
+    "special_cards": ["void_ptr", "template"]
+  },
+  {
+    "id": "Rust",
+    "name": "Rust",
+    "color": [249, 115, 22],
+    "rules": [
+      {"id": "ownership", "desc": "任何控制、位移、注入对己方棋子无效。"},
+      {"id": "borrow_conflict", "desc": "己方棋子吃不到队友的 buff。"}
+    ],
+    "counters": {"内存": 1.3},
+    "weak": {"硬件": 0.8},
+    "special_cards": ["mut_borrow", "unsafe_block"]
+  }
+]

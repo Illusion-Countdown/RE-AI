@@ -1,0 +1,17 @@
+{
+  "id": "deepseek_v4",
+  "name": "DeepSeek-V4",
+  "context": 12,
+  "color": [77, 107, 254],
+  "passive": [
+    {"id": "jurisdiction_damage", "desc": "辖区内己方棋子技能伤害 +20%。"},
+    {"id": "exp_no_stall", "desc": "辖区内 O(2ⁿ) 棋子不再卡顿。"},
+    {"id": "slow_start", "desc": "辖区内棋子启动延迟 +1 秒（想太久）。"},
+    {"id": "native_c", "desc": "环境为母语 C 时，管辖权加成 ×1.5，启动延迟 -0.5 秒。"}
+  ],
+  "ultimate": {
+    "name": "长思考 CoT",
+    "desc": "全场 6 秒不卡顿，且 O(n²)/O(2ⁿ) 棋子出手间隔 -50%。",
+    "charge": 100
+  }
+}

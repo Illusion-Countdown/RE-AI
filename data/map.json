@@ -1,0 +1,98 @@
+{
+  "layers": [
+    {
+      "id": "l1",
+      "name": "硬件层",
+      "subtitle": "分配内存 · 认识端口",
+      "nodes": [
+        {
+          "id": "l1a",
+          "type": "battle",
+          "title": "硬件层 · A",
+          "desc": "第一个战斗节点：Bug 与空指针从两个端口涌入，学习摆位和堵口。",
+          "language_pool": ["C"],
+          "enemy_ids": ["bug", "null_pointer"],
+          "wave_count": 3,
+          "rewards": ["fragments:45", "piece_draft:1", "card_draft:2"],
+          "next": ["l2a", "l2b"]
+        },
+        {
+          "id": "l1b",
+          "type": "battle",
+          "title": "硬件层 · B",
+          "desc": "另一条硬件路线：同样的敌人密度，但运行在 Rust 环境。",
+          "language_pool": ["Rust"],
+          "enemy_ids": ["bug", "null_pointer"],
+          "wave_count": 3,
+          "rewards": ["fragments:45", "piece_draft:1", "card_draft:2"],
+          "next": ["l2a", "l2b"]
+        }
+      ]
+    },
+    {
+      "id": "l2",
+      "name": "内核层",
+      "subtitle": "处理方式 · 并发初现",
+      "nodes": [
+        {
+          "id": "l2a",
+          "type": "battle",
+          "title": "内核层 · A",
+          "desc": "竞态登场：纯伤害会让它分裂，必须用中断停住。",
+          "language_pool": ["Rust"],
+          "enemy_ids": ["bug", "null_pointer", "race"],
+          "wave_count": 3,
+          "rewards": ["fragments:45", "piece_draft:1", "card_draft:2"],
+          "next": ["l3"]
+        },
+        {
+          "id": "l2b",
+          "type": "battle",
+          "title": "内核层 · B",
+          "desc": "另一条内核路线：在 C 环境里处理同一批并发故障。",
+          "language_pool": ["C"],
+          "enemy_ids": ["bug", "null_pointer", "race"],
+          "wave_count": 3,
+          "rewards": ["fragments:45", "piece_draft:1", "card_draft:2"],
+          "next": ["l3"]
+        }
+      ]
+    },
+    {
+      "id": "l3",
+      "name": "运行时层",
+      "subtitle": "资源枯竭 · 精英驻守",
+      "nodes": [
+        {
+          "id": "l3",
+          "type": "elite",
+          "title": "运行时层 · 精英 / 商店",
+          "desc": "精英驻守节点：死循环与内存泄漏考验处理方式；战斗结束后开启商店。",
+          "language_pool": ["C", "Rust"],
+          "enemy_ids": ["race", "deadloop", "leak"],
+          "wave_count": 2,
+          "rewards": ["fragments:80", "rare_piece:1", "version_fragment:1", "shop"],
+          "next": ["l4"]
+        }
+      ]
+    },
+    {
+      "id": "l4",
+      "name": "生产环境",
+      "subtitle": "deploy · Boss",
+      "nodes": [
+        {
+          "id": "l4",
+          "type": "boss",
+          "title": "deploy · 生产环境",
+          "desc": "最终提交：三阶段 Boss，灰度发布、全量发布、熔断。",
+          "language_pool": ["C", "Rust"],
+          "enemy_ids": ["cache_miss"],
+          "wave_count": 3,
+          "rewards": ["victory"],
+          "next": []
+        }
+      ]
+    }
+  ]
+}

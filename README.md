@@ -137,3 +137,11 @@ cd D:\Pygame\RE-AI
 - 无窗口 smoke：`SMOKE OK`；单元测试 5 项通过；
 - 已生成 `docs/shots/` 全流程截图；
 - 范围与文档冲突见 `SCOPE.md`；设计文档在 `设定/`，不会覆盖原文档。
+
+---
+
+## 仓库内其他演示
+
+- [`DANGLING/`](DANGLING/README.md) —— 《悬垂》DANGLING：胜利条件是**改变引用图拓扑**、而非清零血量的即时战术 Roguelike。
+  独立 pygame 工程，9 个固定房间 + 两阶段 Boss，`python DANGLING/run.py` 启动。
+

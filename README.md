@@ -86,6 +86,7 @@ tools/                 无头测试、音频自检与截图
 
 ```bat
 python tools/run_all.py          # 一键跑全部无头回归
+python tools/architecture_test.py # 分层依赖检查
 python tools/flow_test.py        # 教程 → 18 战流程
 python tools/tutorial_test.py    # 四节教程真实卡牌操作
 python tools/rooms_test.py       # 逐房清场
@@ -96,3 +97,5 @@ python tools/drag_test.py        # 拖卡入格 / 手牌拖边
 更多设计：`../内存远征_架构与代码说明.md`
 当前目录与所有权：`STRUCTURE.md`
 四人分工：`TEAM_PLAN.md`
+内容清单：`CONTENT_CATALOG.md`
+新增功能沟通模板：`FEATURE_REQUEST_GUIDE.md`

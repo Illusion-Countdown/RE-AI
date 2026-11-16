@@ -39,8 +39,7 @@ memory_run/
 │
 ├─ content/
 │  ├─ __init__.py              内容包统一出口
-│  ├─ content.py               兼容聚合入口
-│  ├─ bodies.py                3 种身体
+││  ├─ bodies.py                3 种身体
 │  ├─ avatars.py               4 个 AI 娘
 │  ├─ modules.py               14 个模块
 │  ├─ boss_rules.py            6 条 Boss 规则

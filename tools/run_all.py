@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TESTS = [
+    "architecture_test.py",
     "mechanics_test.py",
     "rooms_test.py",
     "flow_test.py",

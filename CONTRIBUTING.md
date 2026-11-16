@@ -72,7 +72,7 @@ python tools/run_all.py
 4. 需要改公共接口时，先由维护者冻结接口。
 5. 再提交 PR。
 
-详细模板见 [`docs/guides/FEATURE_REQUEST_GUIDE.md`](docs/guides/FEATURE_REQUEST_GUIDE.md)。
+详细模板见 [`docs/FEATURE_REQUESTS.md`](docs/FEATURE_REQUESTS.md)。
 
 不要：
 
@@ -209,7 +209,7 @@ PR 描述必须包含：
 - 数据文件
 - 奖励池/商店池
 - 测试
-- [`docs/content/CONTENT_CATALOG.md`](docs/content/CONTENT_CATALOG.md)
+- [`docs/CONTENT.md`](docs/CONTENT.md)
 
 新增美术/音频：
 

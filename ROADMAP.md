@@ -140,4 +140,4 @@
 3. 进入“社区建议池”或当前版本。
 4. 不保证所有建议都实现。
 
-详见 [`docs/guides/FEATURE_REQUEST_GUIDE.md`](docs/guides/FEATURE_REQUEST_GUIDE.md) 和 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
+详见 [`docs/FEATURE_REQUESTS.md`](docs/FEATURE_REQUESTS.md) 和 [`CONTRIBUTING.md`](CONTRIBUTING.md)。

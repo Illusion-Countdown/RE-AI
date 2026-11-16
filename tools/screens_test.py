@@ -19,6 +19,7 @@ def save(app, name):
 
 
 def main():
+    os.makedirs("screenshots", exist_ok=True)
     app = App(fullscreen=False, headless=True)
     app.state = "title"
     save(app, "ui_title.png")

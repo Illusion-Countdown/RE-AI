@@ -27,7 +27,9 @@ htmlcov/
 saves/
 logs/
 *.log
-screenshots/
+screenshots/*
+!screenshots/.gitkeep
+!screenshots/03_battle.png
 
 # PyInstaller 打包产物（若使用 PyInstaller 发布游戏）
 *.spec

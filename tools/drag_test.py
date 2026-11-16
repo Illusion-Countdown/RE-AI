@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pygame
 
 from memory_run.app import App
+from memory_run.cards import Card
 
 
 def down(pos):
@@ -48,14 +49,23 @@ def main():
         a.update(1 / 60)
     a.draw()
     b = a.battle
-    cut = next(c for c in b.hand.slots if c and c.key == "CUT")
+    b.state = "playing"
+    b.intro_t = 0
+    cut = next((c for c in b.hand.slots if c and c.key == "CUT"), None)
+    if cut is None:
+        cut = Card("CUT")
+        b.hand.slots[0] = cut
+    a.draw()
     rr = next(r for r, w, c in a.renderer.hand_rects if c is cut)
-    e = next(e for e in b.graph.edges
-             if e.src.kind == "ROOT" and e.dst.name.startswith("SENTINEL"))
+    e = next((e for e in b.graph.edges
+              if e.src.kind == "ROOT" and e.dst.name.startswith("SENTINEL")),
+             None)
+    assert e is not None, "drag_test needs a SENTINEL edge"
     p = e.points(18)[9]
     a.handle_event(down(rr.center))
     a.handle_event(move(p))
     a.handle_event(up(p))
+    assert not e.alive, "CUT drag did not cut the target edge"
     assert b.state == "clear", b.state
     print("SINGLE DRAG OK")
     pygame.quit()

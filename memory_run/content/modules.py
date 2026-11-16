@@ -6,7 +6,7 @@ MODULES = [
     {"id": "exception", "name": "异常捕获", "en": "TRY/CATCH", "color": GREEN,
      "desc": "每房间第一次析构伤害为 0。", "tag": "防御"},
     {"id": "inline", "name": "内联", "en": "INLINE", "color": AMBER,
-     "desc": "WRITE 伤害 +50%，且不再制造泄漏。", "tag": "输出"},
+     "desc": "WRITE 伤害 +50%，且不再制造坏死格。", "tag": "输出"},
     {"id": "weak_net", "name": "弱引用网", "en": "WEAK.NET", "color": PURPLE,
      "desc": "WEAK 不占工作内存；弱引用目标永久可见。", "tag": "弱引用"},
     {"id": "steal", "name": "引用窃取", "en": "STEAL", "color": TEAL,

@@ -139,14 +139,12 @@ class Grid:
 
 
 class Deck:
-    """网格 + 寄存器 + 仓库（放不进网格的卡）。"""
+    """网格 + 仓库（放不进网格的卡）。"""
 
     def __init__(self):
         self.grid = Grid(5, 5)
         self.cards = []
         self.vault = []
-        self.register = []
-        self.register_cap = 3
         self.rd_cap = 100
         self.reshuffle_penalty = 0
 
@@ -158,7 +156,6 @@ class Deck:
         spots = [(0, 0), (0, 2), (0, 4), (2, 0)]
         for card, (r, c) in zip(self.cards, spots):
             self.grid.place(card, r, c, 0)
-        self.register = ["CUT", "LINK", "WEAK"]
 
     def add(self, key, up=False, auto=True):
         card = Card(key, up)
@@ -214,37 +211,6 @@ class Deck:
         q = self.quality() if q is None else q
         return (0.0, 0.08, 0.18, 0.30)[self.quality_band(q)]
 
-    # ------------------------------------------------------------ 寄存器
-    def can_register(self, key):
-        return key in self.register or len(self.register) < self.register_cap
-
-    def toggle_register(self, key):
-        if key in self.register:
-            if len(self.register) > 1:
-                self.register.remove(key)
-                return True
-            return False
-        if len(self.register) < self.register_cap and self.cards_of(key):
-            self.register.append(key)
-            return True
-        return False
-
-    # ------------------------------------------------------------ 升级
-    def upgrade_cost(self, discount=0):
-        return max(1, 3 - discount)
-
-    def upgrade_pair(self, key, shards, discount=0):
-        if shards < self.upgrade_cost(discount):
-            return False, "碎片不足"
-        cards = [c for c in self.cards if c.key == key and not c.up and c.anchor]
-        if len(cards) < 2:
-            return False, "需要两张在场上的同名基础卡"
-        a, b = cards[0], cards[1]
-        self.grid.remove(b)
-        self.cards.remove(b)
-        a.up = True
-        return True, ""
-
     def upgrade_cards(self, a, b):
         """拖动同名基础卡互相覆盖 = 免费升级，不消耗碎片。"""
         if a is None or b is None or a is b:
@@ -261,7 +227,7 @@ class Deck:
 
     # ------------------------------------------------------------ 战斗牌堆
     def room_pile(self, rng):
-        """整个卡组：网格里所有可用的卡，而不是寄存器里的 3 种。"""
+        """整个卡组：网格里所有可用的卡。"""
         pile = []
         for card in self.cards:
             if card.anchor and not self.grid.card_corroded(card):

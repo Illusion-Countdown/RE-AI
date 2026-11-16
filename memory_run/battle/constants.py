@@ -4,7 +4,7 @@ from memory_run.const import *
 PLAYER_R = 13
 DEFAULT_HP = {
     "MINION": 24, "SENTINEL": 60, "CYCLER": 50, "ALLOCATOR": 70,
-    "WARD": 50, "ZOMBIE": 1, "BOMB": 20, "PYLON": 80,
+    "WARD": 50, "BOMB": 20, "PYLON": 80,
     "QUANTIZER": 100, "GLITCH": 70, "TEAR": 70, "CRAWLER": 100,
     "ERASER": 200, "GC_CORE": 600, "AUDITOR": 800, "KERNEL": 500,
 }

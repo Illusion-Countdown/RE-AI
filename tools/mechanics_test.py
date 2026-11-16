@@ -11,6 +11,24 @@ import pygame
 
 from memory_run.app import App
 from memory_run.cards import CARD_DEFS
+from memory_run.content import ROOMS, BOSS_RULES
+from memory_run.core.cards import Deck
+from memory_run.battle.constants import DEFAULT_HP
+
+# content consistency
+zones = {
+    "T1": 0, "T2": 0, "T3": 0, "T4": 0,
+    "R01": 1, "R02": 1, "R03": 1, "B1": 1,
+    "R04": 2, "R05": 2, "R06": 2, "B2": 2,
+    "R07": 3, "R08": 3, "R09": 3, "B3": 3,
+    "R10": 4, "R11": 4, "B4": 4,
+    "R12": 5, "R13": 5, "B5": 5,
+}
+assert {r["code"]: r["zone"] for r in ROOMS} == zones
+assert not any(r["id"] == "discount" for r in BOSS_RULES)
+assert "ZOMBIE" not in DEFAULT_HP
+assert not hasattr(Deck(), "register")
+print("content consistency ok")
 
 pygame.init()
 app = App(fullscreen=False, headless=True)

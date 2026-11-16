@@ -83,7 +83,7 @@ CARD_DEFS = {
     "ECC": {
         "cn": "纠错码", "en": "ECC", "shape": (1, 1), "color": GREEN,
         "target": "dead", "rarity": 2, "work": 0,
-        "desc": "修复 1 个坏死格，或清除 1 个泄漏。画质会随之回升。",
+        "desc": "修复 1 个坏死格，画质会随之回升；++ 修复 2 个。",
         "up": "修复 2 个坏死格。",
     },
     "LOSSY": {

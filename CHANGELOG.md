@@ -5,10 +5,17 @@ Alpha 阶段不保证存档/接口兼容。
 
 ## [Unreleased]
 
+### Fixed
+
+- 房间 `zone` 统一为 0（教学）/ 1–5（正式区）
+- 移除无效果的 `discount` Boss 规则
+- `perfect` 规则改为真正的碎片奖励翻倍（2 → 4）
+- 移除未使用的 `ZOMBIE` 定义
+- ECC 描述去掉“清除泄漏”
+- 移除 `Deck.register` / 付费升级死代码
+
 ### Planned
 
-- 修复 `RoomDef.zone` 旧编号
-- 修复 `discount` / `perfect` 规则与描述不一致
 - 内容校验与种子回归
 - 可选：图鉴、程序化遭遇
 

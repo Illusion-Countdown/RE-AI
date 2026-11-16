@@ -135,7 +135,7 @@ class RunState:
         if perfect:
             self.perfects += 1
             self.stats["perfects"] += 1
-            bonus = 2 + (1 if self.has_rule("perfect") else 0)
+            bonus = 2 * (2 if self.has_rule("perfect") else 1)
             self.shards += bonus
             got_shards += bonus
             self.score += 150

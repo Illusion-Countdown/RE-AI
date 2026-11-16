@@ -397,7 +397,7 @@ class WorldMixin:
                               y + math.sin(a) * r * 0.9), 2)
 
     def shape_eraser(self, surf, n, x, y, col, hov):
-        """DANGLING shape_zombie：抖动脏对象。"""
+        """DANGLING shape_eraser：抖动脏对象。"""
         r = n.r * 1.14
         jx = random.uniform(-1.4, 1.4)
         jy = random.uniform(-1.4, 1.4)

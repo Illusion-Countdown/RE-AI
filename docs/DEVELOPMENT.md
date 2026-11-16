@@ -333,4 +333,4 @@ content/procgen/
 - 新功能需求 → `docs/FEATURE_REQUESTS.md`
 - 设计历史 → `docs/DESIGN.md`
 
-已有内容清单里记录了几个已知问题（区域编号、Boss 规则描述、未使用敌人等），修复后同步更新。
+当前内容以 `docs/CONTENT.md` 为准；设计稿只作历史归档。

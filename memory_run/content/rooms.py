@@ -73,7 +73,7 @@ ROOMS = [
     ], [E("scope", "hub"), E("hub", "m1"), E("hub", "m2"),
         E("hub", "m3")],
         danger=1, hint="找枢纽：三个子节点都挂在它身上。"),
-    _room("R02", "THE CYCLE", "环", 2, [
+    _room("R02", "THE CYCLE", "环", 1, [
         N("scope", "ROOT", (0.50, 0.08), "SCOPE"),
         N("a", "CYCLER", (0.34, 0.40), "CYCLER.A", 64, partner="b"),
         N("b", "CYCLER", (0.66, 0.40), "CYCLER.B", 64, partner="a"),
@@ -82,7 +82,7 @@ ROOMS = [
     ], [E("scope", "a"), E("scope", "b"), E("a", "b"), E("b", "a"),
         E("a", "m1"), E("b", "m2")],
         danger=2, hint="先破环，否则剪掉一条，另一条会重建。"),
-    _room("R03", "ALLOCATOR", "分配器", 3, [
+    _room("R03", "ALLOCATOR", "分配器", 1, [
         N("scope", "ROOT", (0.50, 0.08), "SCOPE"),
         N("al", "ALLOCATOR", (0.50, 0.32), "ALLOCATOR.16", 90, owned=1),
         N("m1", "MINION", (0.26, 0.62), "MINION.17", 24),
@@ -91,7 +91,7 @@ ROOMS = [
     ], [E("scope", "al"), E("al", "m1"), E("al", "m2"),
         E("al", "ward")],
         danger=2, hint="它每 4 秒申请一个新子对象。先剪入边。"),
-    _room("B1", "GC CORE", "垃圾回收者", 4, [
+    _room("B1", "GC CORE", "垃圾回收者", 1, [
         N("scope", "ROOT", (0.50, 0.05), "SCOPE"),
         N("core", "GC_CORE", (0.50, 0.30), "GC.CORE", 600,
           boss="gc", pylon=True),
@@ -105,7 +105,7 @@ ROOMS = [
         hint="核心在塔架全死前免疫。剪断 PYLON 的根引用，或直接打掉它们。"),
 
     # ------------------------------------------------------------ 第二区
-    _room("R04", "DEADLOCK", "死锁", 5, [
+    _room("R04", "DEADLOCK", "死锁", 2, [
         N("scope", "ROOT", (0.50, 0.07), "SCOPE"),
         N("a", "WARD", (0.32, 0.36), "LOCK.A", 120, owned=2, barrier=True),
         N("b", "WARD", (0.68, 0.36), "LOCK.B", 120, owned=2, barrier=True),
@@ -115,7 +115,7 @@ ROOMS = [
         E("scope", "b"), E("a", "b"), E("b", "a"),
         E("a", "m1"), E("b", "m2")],
         danger=3, hint="两把锁互相引用。屏障会免疫第一次剪断。"),
-    _room("R05", "LIVELOCK", "活锁", 6, [
+    _room("R05", "LIVELOCK", "活锁", 2, [
         N("scope", "ROOT", (0.50, 0.07), "SCOPE"),
         N("g1", "GLITCH", (0.34, 0.38), "GHOST.22", 90, cut_immune=True),
         N("g2", "GLITCH", (0.66, 0.38), "GHOST.23", 90, cut_immune=True),
@@ -124,7 +124,7 @@ ROOMS = [
     ], [E("scope", "g1"), E("scope", "g2"), E("scope2", "m1"),
         E("g1", "m1", "WEAK")],
         danger=3, hint="它不在你的拓扑里：先 CAST 赋予类型，CUT 才生效。"),
-    _room("R06", "RACE CONDITION", "竞态", 7, [
+    _room("R06", "RACE CONDITION", "竞态", 2, [
         N("scope", "ROOT", (0.50, 0.07), "SCOPE"),
         N("q", "QUANTIZER", (0.50, 0.30), "QUANTIZER.25", 100),
         N("g", "GLITCH", (0.22, 0.62), "GLITCH.26", 70),
@@ -134,7 +134,7 @@ ROOMS = [
     ], [E("scope", "q"), E("scope", "g"), E("scope", "t"),
         E("q", "m1"), E("q", "m2")],
         danger=4, hint="量化者会持续压画质。先杀它，或接受模糊的代价。"),
-    _room("B2", "AUDITOR", "审计员", 8, [
+    _room("B2", "AUDITOR", "审计员", 2, [
         N("scope", "ROOT", (0.50, 0.05), "SCOPE"),
         N("core", "AUDITOR", (0.50, 0.30), "AUDITOR", 800,
           boss="auditor"),
@@ -150,7 +150,7 @@ ROOMS = [
         hint="护盾 = 损失画质 ×2；画质 ≥75% 时护盾失效。用 ECC 修坏死格。"),
 
     # ------------------------------------------------------------ 第三区
-    _room("R07", "UNION", "联合体", 9, [
+    _room("R07", "UNION", "联合体", 3, [
         N("scope", "ROOT", (0.50, 0.07), "SCOPE"),
         N("brute", "MINION", (0.50, 0.34), "UNION.BRUTE", 300,
           destructor=True, owned=1),
@@ -160,7 +160,7 @@ ROOMS = [
     ], [E("scope", "brute"), E("scope", "bomb"), E("scope", "m1"),
         E("scope", "ward"), E("bomb", "brute", "WEAK")],
         danger=5, hint="炸弹和硬壳共享血条时，一次引爆等于击杀。"),
-    _room("R08", "TYPE ERASER", "类型擦除者", 10, [
+    _room("R08", "TYPE ERASER", "类型擦除者", 3, [
         N("scope", "ROOT", (0.50, 0.07), "SCOPE"),
         N("er", "ERASER", (0.50, 0.32), "ERASER.35", 260, cut_immune=True),
         N("m1", "MINION", (0.30, 0.66), "MINION.36", 55),
@@ -169,7 +169,7 @@ ROOMS = [
     ], [E("scope", "er"), E("scope", "m1"), E("scope", "m2"),
         E("scope", "p"), E("er", "m1"), E("er", "m2"), E("p", "er")],
         danger=5, hint="它拒绝被 CUT。先用 CAST 剥掉类型免疫，再剪或打。"),
-    _room("R09", "OFF BY ONE", "差一格", 11, [
+    _room("R09", "OFF BY ONE", "差一格", 3, [
         N("scope", "ROOT", (0.50, 0.07), "SCOPE"),
         N("c1", "CRAWLER", (0.20, 0.30), "CRAWLER.38", 120, necro=True),
         N("c2", "CRAWLER", (0.80, 0.30), "CRAWLER.39", 120, necro=True),
@@ -179,7 +179,7 @@ ROOMS = [
     ], [E("scope", "c1"), E("scope", "c2"), E("scope", "q"),
         E("q", "m1"), E("q", "m2"), E("c1", "c2", "WEAK")],
         danger=6, hint="越界爬虫命中会烧坏一格。用 ECC 修回来。"),
-    _room("B3", "KERNEL", "内核", 12, [
+    _room("B3", "KERNEL", "内核", 3, [
         N("scope", "ROOT", (0.50, 0.05), "SCOPE"),
         N("ka", "KERNEL", (0.34, 0.34), "KERNEL.L", 500, boss="kernel"),
         N("kb", "KERNEL", (0.66, 0.34), "KERNEL.R", 500, boss="kernel"),

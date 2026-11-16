@@ -87,6 +87,8 @@ class FX:
         self.sparks = []
         self.glitch = 0.0
         self.slowmo = 0.0
+        self.slow_t = 0.0
+        self.slow_scale = 1.0
         self.time = 0.0
         self.vignette_red = 0.0
         self.scan_y = -200.0
@@ -107,6 +109,14 @@ class FX:
 
     def add_hitstop(self, t):
         self.hitstop = max(self.hitstop, t)
+
+    def slow(self, scale=0.35, dur=0.45):
+        """复用 asymptote 的慢放：只影响战斗世界时间。"""
+        self.slow_scale = scale
+        self.slow_t = max(self.slow_t, dur)
+
+    def time_scale(self):
+        return self.slow_scale if self.slow_t > 0 else 1.0
 
     def add_glitch(self, amount):
         self.glitch = max(self.glitch, amount)
@@ -151,6 +161,10 @@ class FX:
         self.flash = max(0.0, self.flash - self.flash_decay * dt)
         self.glitch = max(0.0, self.glitch - dt * 1.6)
         self.slowmo = max(0.0, self.slowmo - dt)
+        if self.slow_t > 0:
+            self.slow_t = max(0.0, self.slow_t - dt)
+            if self.slow_t <= 0:
+                self.slow_scale = 1.0
         self.vignette_red = max(0.0, self.vignette_red - dt * 1.2)
         self.scan = max(0.0, self.scan - dt * 2.5)
 

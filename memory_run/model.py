@@ -147,12 +147,14 @@ class Graph:
                 return n
         return None
 
-    def add_edge(self, src, dst, kind=STRONG, bend=None, quiet=False):
+    def add_edge(self, src, dst, kind=STRONG, bend=None, quiet=False,
+                 unique=True):
         if not src.alive or not dst.alive:
             return None
-        for e in self.edges:
-            if e.alive and e.src is src and e.dst is dst and e.kind == kind:
-                return None      # 同一对节点同一类边只留一条
+        if unique:
+            for e in self.edges:
+                if e.alive and e.src is src and e.dst is dst and e.kind == kind:
+                    return None      # 同一对节点同一类边只留一条
         e = Edge(src, dst, kind, bend)
         e.born = self.time
         self.edges.append(e)
@@ -200,6 +202,9 @@ class Graph:
     def refcount(self, n):
         c = 0
         for e in self.edges:
+            # 玩家自己的 HOLD 边不把敌人锚在内存里；否则 LINK 会变成自锁
+            if e.src.kind == "PLAYER":
+                continue
             if e.alive and e.dst is n and e.kind == STRONG:
                 c += 1
         return c

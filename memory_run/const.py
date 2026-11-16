@@ -9,13 +9,14 @@ import pygame
 W, H = 1600, 900
 FPS = 60
 
-TOPBAR = pygame.Rect(0, 0, W, 76)
-LEFTPANEL = pygame.Rect(0, 76, 246, H - 76)
-ARENA = pygame.Rect(252, 84, 1328, 730)
-BAND = 30                      # 越界那一格
-PLAY = pygame.Rect(ARENA.x + BAND, ARENA.y + BAND,
-                   ARENA.w - 2 * BAND, ARENA.h - 2 * BAND)
-BOTTOM = pygame.Rect(0, ARENA.bottom, W, H - ARENA.bottom)
+TOPBAR = pygame.Rect(0, 0, W, 72)
+LEFTPANEL = pygame.Rect(0, 72, 248, 714)
+ARENA = pygame.Rect(252, 78, 1052, 704)
+RIGHT = pygame.Rect(1308, 78, 292, 704)
+BAND = 0                       # 本作不做越界，保留常量兼容
+PLAY = pygame.Rect(ARENA.x + 12, ARENA.y + 12,
+                   ARENA.w - 24, ARENA.h - 24)
+BOTTOM = pygame.Rect(0, 786, W, H - 786)
 
 # ---------------------------------------------------------------- 调色
 BG          = (7, 9, 13)

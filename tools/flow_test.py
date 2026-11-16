@@ -1,120 +1,90 @@
 # -*- coding: utf-8 -*-
-"""流程集成测试：标题→选身体→战斗→奖励→下一关→死亡/胜利。"""
+"""无头流程测试：教程、12 场战斗、奖励、模块、Boss 规则、安全屋、结局。"""
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
-os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pygame
-pygame.init()
 
-from dangle.app import App
-from dangle.battle import Battle
-from dangle.const import *
-from dangle.model import STRONG
-
-OK, BAD = [], []
+from memory_run.app import App
+from memory_run.content import TUTORIAL_COUNT
+from memory_run.battle import Battle
 
 
-def check(c, m):
-    (OK if c else BAD).append(m)
-    print(("  [ok] " if c else "  [FAIL] ") + m)
-
-
-def step(app, n=1, dt=1 / 60):
+def tick(app, n=1, dt=1 / 60):
     for _ in range(n):
         app.update(dt)
-        app.draw()
 
 
-def force_clear(b):
-    """用最优解把当前房间清空。"""
-    for _ in range(40):
-        if b.state in ("clear", "done", "victory"):
-            return
-        moved = False
-        for e in list(b.graph.edges):
-            if not e.alive or e.kind != STRONG:
-                continue
-            if e.src.kind == "BOMB" or e.dst.kind == "BOMB":
-                continue
-            if b.cut_edge(e):
-                moved = True
-                break
-        if b.gc_active > 0:
-            pass
-        b.update(1 / 60, {"mvx": 0, "mvy": 0, "plan": False, "dash": False})
-        if not moved:
-            b.slices = 99
+def clear_battle(app):
+    b = app.battle
+    b.state = "playing"
+    b.intro_t = 0
+    for n in list(b.graph.nodes):
+        if n.alive and n.hostile:
+            b.kill_node(n, source="test")
+    b.state = "playing"
+    b.check_clear()
+    for _ in range(200):
+        app.update(1 / 60)
+        if app.state != "battle":
+            break
+
+
+def test_tutorial(app):
+    app.new_run(True)
+    assert app.state == "deck"
+    app.deck_start()
+    for step in range(TUTORIAL_COUNT):
+        assert app.state == "battle", (step, app.state)
+        clear_battle(app)
+        assert app.state == "tutorial_clear", (step, app.state)
+        app.tutorial_next()
+        if step < TUTORIAL_COUNT - 1:
+            assert app.state == "battle"
+    assert app.state == "tutorial_end", app.state
+    app.enter_main_run()
+    assert app.state == "deck"
+    print("tutorial ok, step", app.run.step)
+
+
+def test_main(app):
+    app.state = "title"
+    app.new_run(False)
+    app.deck_start()
+    guard = 0
+    while app.run.room is not None and guard < 30:
+        guard += 1
+        assert app.state == "battle", (app.run.step, app.state)
+        room = app.run.room
+        clear_battle(app)
+        if app.state == "reward":
+            app.choose_card(0)
+        if app.state == "module":
+            app.choose_module(0)
+        if app.state == "rule":
+            app.choose_rule(0)
+        if app.state == "deck":
+            # 奖励后整备：自动整理，继续
+            app.editor.auto_arrange()
+            app.deck_start()
+        if app.state == "battle":
+            continue
+    assert app.state == "end", app.state
+    assert app.run.victory, app.run.step
+    print("main ok, rooms", app.run.rooms_cleared, "score", app.run.score,
+          "modules", [m["id"] for m in app.run.modules])
 
 
 def main():
     app = App(fullscreen=False, headless=True)
-    check(app.state == "title", "初始在标题")
-    app.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
-    check(app.state == "body", "标题 -> 选身体")
-    app.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2))
-    check(app.state == "play", "选身体 -> 战斗")
-    check(app.run.body["id"] == "array", "选择了数组身体")
-    check(app.battle.room_index == 0, "第一关")
-
-    # 打到清关
-    b = app.battle
-    b.intro_t = 0
-    b.state = "playing"
-    force_clear(b)
-    check(b.state in ("clear", "done"), "第一关清空")
-    step(app, 240)
-    check(app.state == "reward", "进入奖励界面 state=%s" % app.state)
-    check(len(app.reward_options) == 3, "三个奖励选项")
-    before = len(app.run.modules)
-    app.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
-    check(len(app.run.modules) == before + 1, "获得模块")
-    check(app.state == "play", "进入第二关")
-    check(app.run.room_index == 1, "room_index=1")
-    check(app.battle.room_index == 1, "battle room=1")
-    check(app.battle.body is app.run.body, "身体继承")
-
-    # 暂停
-    app.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
-    check(app.paused, "ESC 暂停")
-    app.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
-    check(not app.paused, "ESC 恢复")
-
-    # 死亡
-    app.battle.hp = 0.5
-    app.battle.lives = 1
-    app.battle.damage_player(99, force=True)
-    check(app.battle.state == "dead", "生命归零 -> dead")
-    step(app, 140)
-    check(app.state == "gameover", "进入 gameover state=%s" % app.state)
-
-    # 胜利
-    app.start_run(0)
-    app.run.room_index = 8
-    app.battle = Battle(app.run, 8)
-    app.battle.state = "playing"
-    app.battle.intro_t = 0
-    app.battle.hp = 9999
-    b = app.battle
-    for _ in range(60):
-        if b.state == "victory":
-            break
-        for e in list(b.graph.edges):
-            if e.alive and e.kind == STRONG or (b.boss_phase == 2 and e.alive):
-                if e.kind == "STRONG" and (e.dst.kind == "CORE" or b.boss_phase == 2):
-                    b.cut_edge(e)
-        b.slices = 99
-        b.update(1 / 60, {"mvx": 0, "mvy": 0, "plan": False, "dash": False})
-    check(b.state == "victory" or b.boss_phase == 2, "Boss 可以被推进")
-    step(app, 200)
-    check(app.state == "victory", "胜利界面 state=%s" % app.state)
-
-    print("\nPASS %d / FAIL %d" % (len(OK), len(BAD)))
-    return 1 if BAD else 0
+    test_tutorial(app)
+    test_main(app)
+    print("FLOW OK")
 
 
-sys.exit(main())
+if __name__ == "__main__":
+    main()

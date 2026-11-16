@@ -3,7 +3,7 @@
 > 版本：2026-11-16 单人模式
 > 范围：只统计当前代码实际存在的内容，不把设计稿里未实现的东西写成“已完成”。
 > 数据源：`memory_run/content/*`、`memory_run/battle/*`、`memory_run/platform/audio.py`
-> 架构与分工：`STRUCTURE.md`、`TEAM_PLAN.md`
+> 架构与分工：`../architecture/STRUCTURE.md`、`../team/TEAM_PLAN.md`
 
 ---
 

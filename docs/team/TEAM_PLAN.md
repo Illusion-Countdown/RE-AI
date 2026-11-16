@@ -5,11 +5,11 @@
 > 基线：当前可玩的 5 区 18 战 + 5 Boss + 4 教程
 > 原则：**不重写玩法，先按文件所有权并行开发**
 > 相关文件：
-> - 当前目录结构：`STRUCTURE.md`
-> - 当前内容清单：`CONTENT_CATALOG.md`
+> - 当前目录结构：`../architecture/STRUCTURE.md`
+> - 当前内容清单：`../content/CONTENT_CATALOG.md`
 > - 启动：`python run.py --windowed`
 > - 一键回归：`python tools/run_all.py`
-> - 新功能沟通：`../FEATURE_REQUEST_GUIDE.md`
+> - 新功能沟通：`../guides/FEATURE_REQUEST_GUIDE.md`
 
 ---
 
@@ -404,7 +404,7 @@ generate_run(seed, difficulty) -> RunPlan
 memory_run/content/*
 memory_run/run/runstate.py
 docs/balance_report.md
-docs/content_catalog.md（或根目录 CONTENT_CATALOG.md）
+docs/content/CONTENT_CATALOG.md
 ```
 
 可以读：
@@ -487,7 +487,7 @@ python tools/architecture_test.py
 3. 改 `content/pools.py` 加入奖励池。
 4. 找 B 在 `battle/actions.py` 加 `apply_card` 分支。
 5. 加 `mechanics_test.py`。
-6. 更新 `CONTENT_CATALOG.md`。
+6. 更新 `../content/CONTENT_CATALOG.md`。
 
 ### 5.6 新增敌人流程
 
@@ -496,7 +496,7 @@ python tools/architecture_test.py
 3. 如果现有行为够用，只调 HP/射速/数量。
 4. 需要新行为才找 B 加 `enemies.py` 分支。
 5. 跑长时模拟，确认不刷屏、不卡死。
-6. 更新敌人表和 `CONTENT_CATALOG.md`。
+6. 更新敌人表和 `../content/CONTENT_CATALOG.md`。
 
 ### 5.7 平衡工作流
 
@@ -1052,7 +1052,7 @@ memory_run/ui/app.py
 
 ## 10. 当前已知问题与归属
 
-这些问题写在 `CONTENT_CATALOG.md` 第 10 节，分配如下：
+这些问题写在 `../content/CONTENT_CATALOG.md` 第 10 节，分配如下：
 
 | 问题 | Owner | 优先级 | 说明 |
 |---|---|---|---|

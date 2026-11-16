@@ -50,7 +50,7 @@
 | 身体 | 3 种 |
 | 程序化音效 | 27 个 |
 
-完整内容表见 [`docs/CONTENT_CATALOG.md`](docs/CONTENT_CATALOG.md)。
+完整内容表见 [`docs/content/CONTENT_CATALOG.md`](docs/content/CONTENT_CATALOG.md)。
 
 ---
 
@@ -142,17 +142,21 @@ memory_run/
 tools/           架构/机制/房间/流程/教程/界面/拖拽/音频回归
 ```
 
+文档总索引：
+
+- [`docs/README.md`](docs/README.md)
+
 详细目录、文件所有权和兼容层：
 
-- [`docs/STRUCTURE.md`](docs/STRUCTURE.md)
+- [`docs/architecture/STRUCTURE.md`](docs/architecture/STRUCTURE.md)
 
 四人分工、依赖关系、各角色任务：
 
-- [`docs/TEAM_PLAN.md`](docs/TEAM_PLAN.md)
+- [`docs/team/TEAM_PLAN.md`](docs/team/TEAM_PLAN.md)
 
 新增功能如何提需求：
 
-- [`FEATURE_REQUEST_GUIDE.md`](FEATURE_REQUEST_GUIDE.md)
+- [`docs/guides/FEATURE_REQUEST_GUIDE.md`](docs/guides/FEATURE_REQUEST_GUIDE.md)
 
 ---
 

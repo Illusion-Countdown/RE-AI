@@ -60,23 +60,20 @@
 
 ## 代码
 
-```
+```text
 run.py                 启动
 memory_run/
   const.py             布局、调色、字体、绘制工具
-  fx.py                震屏/闪白/粒子/浮字/冲击环/故障
-  audio.py             程序化音效
-  model.py             Node / Edge / Graph（refcount）
-  cards.py             Card / Grid / Hand / 画质公式
-  content.py           AI 娘、身体、模块、房间、Boss 规则
-  runstate.py          一局远征的持久状态、商店、碎片
-  battle.py            战斗、划线 CUT、GC、协同敌人与 Boss
-  render.py            战场、HUD、卡面、画质降级、AI 娘
-  deckui.py            网格整备/BENCH/免费拖拽升级/修复/商店
-  screens.py           标题/帮助/暂停/奖励/商店/结算/教程
-  app.py               状态机、输入、奖励后整备、主循环
+  core/                Node / Edge / Graph / Card / Grid / Hand
+  content/             身体、AI 娘、模块、Boss 规则、卡牌定义、房间、奖励池
+  run/                 一局远征状态、商店、碎片
+  battle/              core / input / actions / gc / player / enemies
+  ui/                  app / render / screens / deckui / fx
+  platform/            程序化音频
 tools/                 无头测试、音频自检与截图
 ```
+
+实际目录、文件所有权和兼容 shim 见 `STRUCTURE.md`；四人分工见 `TEAM_PLAN.md`。
 
 全部美术由代码绘制，音效启动时合成，无外部素材。
 视觉/音频复用：`DANGLING` 的引用图/标题/结局图/模块符印，`asymptote` 的程序化合成音频层。
@@ -88,7 +85,8 @@ tools/                 无头测试、音频自检与截图
 ## 测试
 
 ```bat
-python tools/flow_test.py        # 教程 → 12 房流程
+python tools/run_all.py          # 一键跑全部无头回归
+python tools/flow_test.py        # 教程 → 18 战流程
 python tools/tutorial_test.py    # 四节教程真实卡牌操作
 python tools/rooms_test.py       # 逐房清场
 python tools/screens_test.py     # 全界面渲染
@@ -96,3 +94,5 @@ python tools/drag_test.py        # 拖卡入格 / 手牌拖边
 ```
 
 更多设计：`../内存远征_架构与代码说明.md`
+当前目录与所有权：`STRUCTURE.md`
+四人分工：`TEAM_PLAN.md`

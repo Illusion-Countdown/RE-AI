@@ -389,6 +389,9 @@ Lead 冻结接口
 
 ## 4. 目标文件构成
 
+> **当前落地状态（2026-11-16）**：`core/`、`content/`、`run/`、`battle/`、`ui/`、`platform/` 已建立；`content` 已拆成 bodies/avatars/modules/boss_rules/card_defs/rooms/pools/progression；`battle` 已拆成 core/input/actions/gc/player/enemies/entities/constants；`ui/render` 已拆成 common/core/world/hud/hand。实际目录与兼容 shim 见 `STRUCTURE.md`。
+> 下面保留完整目标结构，作为下一阶段（UI/整备再细分）的路线图。
+
 下面是重构完成后的建议结构。重构期间可以保留旧文件作为兼容门面，逐步迁移。
 
 ```text

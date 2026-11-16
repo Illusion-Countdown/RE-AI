@@ -1,0 +1,82 @@
+name: Feature request
+description: 提出新玩法、新卡、新敌人、新系统或体验改进
+title: "[Feature]: "
+labels: ["enhancement"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        新功能请先描述“玩家体验”和“明确规则”，不要只写“加个玩法”。
+        详细模板见仓库 `FEATURE_REQUEST_GUIDE.md`。
+  - type: textarea
+    id: one_line
+    attributes:
+      label: 一句话
+      description: 玩家在什么情况下，用什么，得到什么新体验？
+      placeholder: 玩家可以把一个敌人回滚到 3 秒前的位置和 HP，用来打断 Boss 蓄力。
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 它解决什么问题
+      description: 当前玩法哪里不够？它让玩家多做什么决策？
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: 规则
+      description: 触发条件、费用、目标、成功/失败、持续时间、冷却
+      placeholder: |
+        - 目标：单个敌人
+        - 费用：2 工作内存
+        - 次数：每房 2 次
+        - 普通敌人：恢复 3 秒前 HP/位置
+        - Boss：只恢复位置
+    validations:
+      required: true
+  - type: textarea
+    id: interactions
+    attributes:
+      label: 与现有机制的交互
+      description: WEAK、LINK、GC、护盾、ALIAS、坏死格、画质、Boss 免疫
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 影响范围
+      description: 内容数据 / 战斗行为 / UI / 音效 / 接口
+      placeholder: |
+        内容：A
+        战斗：B
+        UI：C
+        测试/音效：D
+        接口：Lead
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 写成可检查的 Given/When/Then 或勾选清单
+    validations:
+      required: true
+  - type: textarea
+    id: not_included
+    attributes:
+      label: 不包含
+      description: 明确这次不做什么，防止范围膨胀
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 我已搜索过现有 Issue / Roadmap，没有重复
+          required: true
+        - label: 这个需求符合当前单人模式范围
+          required: true

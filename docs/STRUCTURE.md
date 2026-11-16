@@ -1,21 +1,29 @@
-# MEMORY_RUN 当前代码结构
+# 《悬垂：内存远征》当前代码结构
 
 > 2026-11-16 重构后的实际结构。
-> 设计目标与分工见 `TEAM_PLAN.md`；本文件只描述“现在代码长什么样”。
+> 设计目标与分工见 `docs/TEAM_PLAN.md`；本文件只描述“现在代码长什么样”。
 
 ---
 
 ## 1. 顶层
 
 ```text
-MEMORY_RUN/
+RE-AI/
 ├─ run.py                 启动入口
-├─ README.md              玩家/运行说明
-├─ TEAM_PLAN.md           分工、依赖、A/B/C/D/Lead 附录
-├─ STRUCTURE.md           本文件
+├─ gameStart.bat          Windows 启动器
+├─ README.md              项目介绍 / 运行说明
+├─ CONTRIBUTING.md        贡献流程
+├─ ROADMAP.md             路线图
+├─ CHANGELOG.md           更新记录
+├─ SECURITY.md            安全策略
+├─ LICENSE                MIT
 ├─ requirements.txt
-├─ 开始游戏.bat
 ├─ screenshots/
+├─ design/
+├─ docs/
+│  ├─ STRUCTURE.md        本文件
+│  ├─ TEAM_PLAN.md        分工与依赖
+│  └─ CONTENT_CATALOG.md  内容清单
 ├─ tools/
 └─ memory_run/
 ```

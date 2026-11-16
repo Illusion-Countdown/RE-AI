@@ -9,7 +9,7 @@
 > - 当前内容清单：`CONTENT_CATALOG.md`
 > - 启动：`python run.py --windowed`
 > - 一键回归：`python tools/run_all.py`
-> - 新功能沟通：`FEATURE_REQUEST_GUIDE.md`
+> - 新功能沟通：`../FEATURE_REQUEST_GUIDE.md`
 
 ---
 
@@ -57,12 +57,13 @@
 ## 1. 当前代码地图
 
 ```text
-MEMORY_RUN/
+RE-AI/
 ├─ run.py                      启动
 ├─ README.md
-├─ STRUCTURE.md                当前目录/所有权
-├─ TEAM_PLAN.md                本文件
-├─ CONTENT_CATALOG.md          当前内容清单
+├─ docs/
+│  ├─ STRUCTURE.md             当前目录/所有权
+│  ├─ TEAM_PLAN.md             本文件
+│  └─ CONTENT_CATALOG.md       当前内容清单
 ├─ tools/
 │  ├─ architecture_test.py     分层依赖检查
 │  ├─ mechanics_test.py

@@ -10,18 +10,11 @@ body:
         新功能请先描述“玩家体验”和“明确规则”，不要只写“加个玩法”。
         详细模板见仓库 `FEATURE_REQUEST_GUIDE.md`。
   - type: textarea
-    id: one_line
+    id: description
     attributes:
-      label: 一句话
-      description: 玩家在什么情况下，用什么，得到什么新体验？
+      label: 基本描述,解决什么问题
+      description: 玩家在什么情况下，用什么，得到什么新体验？当前玩法哪里不够？它让玩家多做什么决策？
       placeholder: 玩家可以把一个敌人回滚到 3 秒前的位置和 HP，用来打断 Boss 蓄力。
-    validations:
-      required: false
-  - type: textarea
-    id: problem
-    attributes:
-      label: 它解决什么问题
-      description: 当前玩法哪里不够？它让玩家多做什么决策？
     validations:
       required: false
   - type: textarea

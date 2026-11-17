@@ -121,7 +121,9 @@ class HudMixin:
             if card and rect.collidepoint(b.screen_mouse):
                 hovered = card
                 break
-        card = b.aim["card"] if b.aim else hovered
+        card = hovered
+        if b.aim and (b.aim.get("stage", 0) > 0 or b.edge_drag):
+            card = b.aim["card"]
         if card:
             self.draw_card_detail(screen, card,
                                   pygame.Rect(W - 402, 132, 372, 246))

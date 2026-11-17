@@ -48,7 +48,7 @@ class ActionsMixin:
         self.draw_one()
         self.recycle_after_use(card)
         self.normalize_selection()
-        self.aim = None
+        self.aim_selected()
         self.edge_drag = None
         self.stats["cards"] += 1
         self.run.stats["cards"] += 1

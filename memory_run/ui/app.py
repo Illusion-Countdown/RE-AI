@@ -433,7 +433,6 @@ class App:
                     return
             if ev.button == 3:
                 self.card_press = None
-                b.aim = None
                 b.drag_active = False
             b.on_mouse_down(world, ev.button, pygame.key.get_mods())
         elif ev.type == pygame.MOUSEBUTTONUP:
@@ -447,7 +446,7 @@ class App:
                     over_hand = any(r.collidepoint(ev.pos)
                                     for r, _w, _c in self.renderer.hand_rects)
                     if over_hand or BOTTOM.collidepoint(ev.pos):
-                        b.aim = None
+                        b.aim_selected()
                     else:
                         b.drop_card_at(world)
                 else:

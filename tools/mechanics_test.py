@@ -42,9 +42,12 @@ b.intro_t = 0
 assert len(b.hand.slots) == 3
 assert b.hand.total() == 3
 assert not hasattr(b.hand, "overflow")
+assert b.selected == 1
+assert b.aim and b.aim["card"] is b.hand.slots[1]
 first = b.selected
 b.cycle_card(1)
 assert b.selected == (first + 1) % 3
+assert b.aim["card"] is b.hand.slots[b.selected]
 b.cycle_card(-1)
 assert b.selected == first
 print("hand rotation ok")
@@ -124,6 +127,17 @@ assert b2.use_card(empty, ("slot", 0)), b2.toast_msg
 assert b2.hand.total() == 2, "empty pile must not draw"
 assert empty in b2.used
 print("empty pile no draw ok")
+
+# the middle card is already aimed: click a target without selecting the card first
+b2.hand.slots[1] = Card("TRUNC")
+b2.selected = 1
+b2.aim_selected()
+b2.work_used = 0.0
+target = next(n for n in b2.graph.hostiles()
+              if n.alive and not n.data.get("boss"))
+b2.on_mouse_down((target.x, target.y), 1)
+assert target.data.get("cast_stripped") or target.stun > 0
+print("default aim click ok")
 
 print("MECHANICS OK")
 pygame.quit()

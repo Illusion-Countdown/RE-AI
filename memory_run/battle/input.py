@@ -11,9 +11,6 @@ class InputMixin:
             self.nope("这个手牌槽是空的")
             return
         self.selected = i
-        if self.aim and self.aim.get("card") is card:
-            self.aim = None
-            return
         self.aim = {"card": card, "where": ("slot", i), "stage": 0, "src": None}
 
     def cycle_card(self, delta):
@@ -170,10 +167,15 @@ class InputMixin:
         if self.state != "playing":
             return
         if button == 3:
-            if self.aim:
-                self.aim = None
+            # 右键仍可 WRITE；只有正在选第二个目标/划边时才用于取消
+            if self.aim and (self.aim.get("stage", 0) > 0 or self.edge_drag):
+                self.edge_drag = None
+                self.slash = []
+                self.aim_selected()
+                self.toast("已取消目标选择")
             else:
                 self.write_attack()
+                self.aim_selected()
             return
         if button != 1:
             return

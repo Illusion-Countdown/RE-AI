@@ -58,16 +58,9 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.zoom = clamp(self.zoom + steps * 0.08, 1.0, 2.0)
 
     def update_camera(self, b, dt):
-        vw, vh = W / self.zoom, H / self.zoom
-        tx = clamp(b.player_node.x, vw / 2, W - vw / 2)
-        ty = clamp(b.player_node.y, vh / 2, H - vh / 2)
-        if not self._cam_ready:
-            self.cam = [tx, ty]
-            self._cam_ready = True
-            return
-        k = min(1.0, max(0.0, dt) * 7.0)
-        self.cam[0] += (tx - self.cam[0]) * k
-        self.cam[1] += (ty - self.cam[1]) * k
+        # 不做边缘夹取：角色永远在屏幕正中央，地图边缘由背景网格补齐
+        self.cam = [b.player_node.x, b.player_node.y]
+        self._cam_ready = True
 
     def screen_to_world(self, pos):
         vw, vh = W / self.zoom, H / self.zoom
@@ -80,13 +73,41 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         return ((pos[0] - sx) * self.zoom, (pos[1] - sy) * self.zoom)
 
     def _camera_view(self):
-        if self.zoom <= 1.001:
-            return self.world
         vw, vh = W / self.zoom, H / self.zoom
-        sx = clamp(self.cam[0] - vw / 2, 0, max(0, W - vw))
-        sy = clamp(self.cam[1] - vh / 2, 0, max(0, H - vh))
-        src = pygame.Rect(int(sx), int(sy), max(1, int(vw)), max(1, int(vh)))
-        return pygame.transform.smoothscale(self.world.subsurface(src), (W, H))
+        sx, sy = self.cam[0] - vw / 2, self.cam[1] - vh / 2
+        if sx >= 0 and sy >= 0 and sx + vw <= W and sy + vh <= H:
+            src = pygame.Rect(int(sx), int(sy), max(1, int(vw)),
+                              max(1, int(vh)))
+            return pygame.transform.smoothscale(
+                self.world.subsurface(src), (W, H))
+
+        # 角色贴边时地图会出现空区：用同一套网格补满，不露出黑边
+        view = pygame.Surface((W, H))
+        view.fill((6, 9, 14))
+        step = 48
+        gx = math.ceil(sx / step) * step
+        while gx < sx + vw:
+            px = int((gx - sx) * self.zoom)
+            pygame.draw.line(view, (14, 22, 30), (px, 0), (px, H), 1)
+            gx += step
+        gy = math.ceil(sy / step) * step
+        while gy < sy + vh:
+            py = int((gy - sy) * self.zoom)
+            pygame.draw.line(view, (14, 22, 30), (0, py), (W, py), 1)
+            gy += step
+
+        ix0, iy0 = max(0, sx), max(0, sy)
+        ix1, iy1 = min(W, sx + vw), min(H, sy + vh)
+        if ix1 > ix0 and iy1 > iy0:
+            src = pygame.Rect(int(ix0), int(iy0),
+                              max(1, int(ix1 - ix0)), max(1, int(iy1 - iy0)))
+            dw = max(1, int(src.w * self.zoom))
+            dh = max(1, int(src.h * self.zoom))
+            part = pygame.transform.smoothscale(self.world.subsurface(src),
+                                                (dw, dh))
+            view.blit(part, (int((ix0 - sx) * self.zoom),
+                             int((iy0 - sy) * self.zoom)))
+        return view
 
     # ------------------------------------------------------------ 主绘制
 

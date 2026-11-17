@@ -1190,10 +1190,8 @@ class Battle:
         return base
 
     def fidelity_resolution_factor(self):
-        if self.fidelity >= 75:
-            return 1.0
         if self.fidelity >= 50:
-            return 0.82
+            return 1.0
         if self.fidelity >= 25:
             return 0.66
         return 0.50
@@ -2136,7 +2134,26 @@ class Battle:
             self.fid_noise.append(ns)
 
     def draw_fidelity_debuff(self, s):
-        if self.fidelity >= 75:
+        if self.fidelity >= 50:
+            # Above 50 the battlefield keeps full resolution. Only a very
+            # faint scanline/noise shimmer remains, never tint or tearing.
+            self._ensure_fidelity_fx()
+            if self.fidelity >= 75:
+                scan_alpha, noise_alpha = 3, 0
+            else:
+                level = max(0.0, min(1.0, (75.0 - self.fidelity) / 25.0))
+                scan_alpha, noise_alpha = int(6 + 10 * level), int(4 + 6 * level)
+            self.fid_scan.set_alpha(scan_alpha)
+            s.blit(self.fid_scan, (0, 0))
+            if noise_alpha:
+                noise = pygame.transform.scale(self.fid_noise[int(self.time * 7) % 4], (W, H))
+                noise.set_alpha(noise_alpha)
+                s.blit(noise, (0, 0))
+            # one slow, low-contrast sweep line: atmosphere without blocking
+            sy = int((self.time * 17) % H)
+            sweep = pygame.Surface((W, 1), pygame.SRCALPHA)
+            sweep.fill((170, 230, 245, 7 if self.fidelity >= 75 else 12))
+            s.blit(sweep, (0, sy))
             return
         self._ensure_fidelity_fx()
         level = max(0.0, min(1.0, (75.0 - self.fidelity) / 75.0))

@@ -7,6 +7,7 @@ body:
     attributes:
       value: |
         感谢反馈。请附上复现步骤；如果游戏异常退出，请附根目录的 `crash.log`。
+        优先级标签由维护者按[标签规则](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/LABELS.md)统一设置。
   - type: input
     id: version
     attributes:

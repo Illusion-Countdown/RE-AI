@@ -67,7 +67,7 @@ python tools/run_all.py
    - 成功/失败分别发生什么
    - 与 WEAK / LINK / GC / 护盾 / 画质等机制的交互
    - 验收标准
-2. 维护者确认范围和优先级。
+2. 维护者确认范围和优先级（标签规则见 [`docs/LABELS.md`](docs/LABELS.md)）。
 3. 需要跨层时拆成 A/B/C/D 小任务（内容、战斗、UI、测试）。
 4. 需要改公共接口时，先由维护者冻结接口。
 5. 再提交 PR。
@@ -94,7 +94,7 @@ python tools/run_all.py
 - 截图或录屏
 - 是否可稳定复现
 
-使用 Issue 模板中的 **Bug report**。
+使用 Issue 模板中的 **Bug report**。维护者会按 [`docs/LABELS.md`](docs/LABELS.md) 标注优先级。
 
 ---
 

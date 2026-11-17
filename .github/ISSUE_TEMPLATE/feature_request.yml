@@ -8,6 +8,7 @@ body:
       value: |
         请先写清“玩家体验”和“具体规则”，不要只写“加个玩法”。
         详细模板见 [`docs/FEATURE_REQUESTS.md`](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/FEATURE_REQUESTS.md)。
+        优先级标签由维护者按[标签规则](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/LABELS.md)统一设置。
   - type: textarea
     id: idea
     attributes:

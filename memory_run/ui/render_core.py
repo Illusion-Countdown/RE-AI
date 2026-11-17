@@ -23,9 +23,6 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.t = 0.0
         self.last_quality = 100
         self.trail = []
-        self.zoom = 1.25
-        self.cam = [W / 2, H / 2]
-        self._cam_ready = False
 
     def _make_bg(self):
         """整张屏幕都是战场：没有左右栏，也没有顶栏底板。"""
@@ -51,63 +48,11 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
 
     # ------------------------------------------------------------ 相机
 
-    def reset_camera(self):
-        self._cam_ready = False
-
-    def zoom_by(self, steps):
-        self.zoom = clamp(self.zoom + steps * 0.08, 1.0, 2.0)
-
-    def update_camera(self, b, dt):
-        # 不做边缘夹取：角色永远在屏幕正中央，地图边缘由背景网格补齐
-        self.cam = [b.player_node.x, b.player_node.y]
-        self._cam_ready = True
-
     def screen_to_world(self, pos):
-        vw, vh = W / self.zoom, H / self.zoom
-        sx, sy = self.cam[0] - vw / 2, self.cam[1] - vh / 2
-        return (sx + pos[0] / self.zoom, sy + pos[1] / self.zoom)
+        return pos
 
     def world_to_screen(self, pos):
-        vw, vh = W / self.zoom, H / self.zoom
-        sx, sy = self.cam[0] - vw / 2, self.cam[1] - vh / 2
-        return ((pos[0] - sx) * self.zoom, (pos[1] - sy) * self.zoom)
-
-    def _camera_view(self):
-        vw, vh = W / self.zoom, H / self.zoom
-        sx, sy = self.cam[0] - vw / 2, self.cam[1] - vh / 2
-        if sx >= 0 and sy >= 0 and sx + vw <= W and sy + vh <= H:
-            src = pygame.Rect(int(sx), int(sy), max(1, int(vw)),
-                              max(1, int(vh)))
-            return pygame.transform.smoothscale(
-                self.world.subsurface(src), (W, H))
-
-        # 角色贴边时地图会出现空区：用同一套网格补满，不露出黑边
-        view = pygame.Surface((W, H))
-        view.fill((6, 9, 14))
-        step = 48
-        gx = math.ceil(sx / step) * step
-        while gx < sx + vw:
-            px = int((gx - sx) * self.zoom)
-            pygame.draw.line(view, (14, 22, 30), (px, 0), (px, H), 1)
-            gx += step
-        gy = math.ceil(sy / step) * step
-        while gy < sy + vh:
-            py = int((gy - sy) * self.zoom)
-            pygame.draw.line(view, (14, 22, 30), (0, py), (W, py), 1)
-            gy += step
-
-        ix0, iy0 = max(0, sx), max(0, sy)
-        ix1, iy1 = min(W, sx + vw), min(H, sy + vh)
-        if ix1 > ix0 and iy1 > iy0:
-            src = pygame.Rect(int(ix0), int(iy0),
-                              max(1, int(ix1 - ix0)), max(1, int(iy1 - iy0)))
-            dw = max(1, int(src.w * self.zoom))
-            dh = max(1, int(src.h * self.zoom))
-            part = pygame.transform.smoothscale(self.world.subsurface(src),
-                                                (dw, dh))
-            view.blit(part, (int((ix0 - sx) * self.zoom),
-                             int((iy0 - sy) * self.zoom)))
-        return view
+        return pos
 
     # ------------------------------------------------------------ 主绘制
 
@@ -118,8 +63,7 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         q = b.quality()
         self.last_quality = q
         b.screen_mouse = mouse
-        self.update_camera(b, dt)
-        b.mouse = self.screen_to_world(mouse)
+        b.mouse = mouse
         b.hover_node = b.node_at(*b.mouse)
         b.hover_edge = None if b.hover_node else b.edge_at(*b.mouse)
 
@@ -130,8 +74,8 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.draw_world(self.world, b, (ox, oy), b.mouse)
         self.world.set_clip(None)
 
-        # 先做视野缩放，再做画质降级；UI 永远最后画，保持清晰
-        surf = self._camera_view()
+        # 固定全战场视野，只做画质降级；UI 永远最后画，保持清晰
+        surf = self.world
         band = b.quality_band()
         if band >= 1:
             factor = {1: 0.58, 2: 0.30, 3: 0.11}[band]

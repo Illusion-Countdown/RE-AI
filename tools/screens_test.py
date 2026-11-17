@@ -29,9 +29,6 @@ def main():
     for _ in range(140):
         app.update(1 / 60)
     save(app, "ui_battle.png")
-    app.renderer.zoom = 2.0
-    save(app, "ui_battle_zoom.png")
-    app.renderer.zoom = 1.25
     app.state = "pause"
     save(app, "ui_pause.png")
     app.state = "help"

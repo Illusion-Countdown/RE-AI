@@ -38,9 +38,9 @@ class HandMixin:
 
         blit_text(screen, "1 2 3 选牌   ·   C 上一张   ·   SPACE 下一张",
                   (cx, H - 168), 10, DIM, mono=True, anchor="midtop")
-        # FOCUS 与视野：放在右下角，不再占用顶部/左侧
+        # FOCUS 与冲刺提示：放在右下角，不再占用顶部/左侧
         blit_text(screen, "FOCUS", (W - 238, H - 52), 9, DIM, mono=True)
         bar(screen, pygame.Rect(W - 238, H - 36, 174, 4),
             b.focus / max(1, b.focus_max), PURPLE)
-        blit_text(screen, f"滚轮 · 视野 {int(self.zoom * 100)}%   E 冲刺",
+        blit_text(screen, "SHIFT 减速   ·   E 冲刺",
                   (W - 24, H - 24), 10, DIM2, mono=True, anchor="topright")

@@ -89,7 +89,6 @@ class App:
             return
         self.run.begin_room()
         self.battle = Battle(self.run, FX())
-        self.renderer.reset_camera()
         self.state = "battle"
         self._finished_handled = False
         self.result = None
@@ -400,9 +399,6 @@ class App:
         b = self.battle
         if b is None:
             return
-        if ev.type == pygame.MOUSEWHEEL:
-            self.renderer.zoom_by(ev.y)
-            return
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_ESCAPE:
                 self.state = "pause"
@@ -416,9 +412,6 @@ class App:
                 if abs(ev.pos[0] - sx) + abs(ev.pos[1] - sy) > 8:
                     self.card_press["moved"] = True
         elif ev.type == pygame.MOUSEBUTTONDOWN:
-            if ev.button in (4, 5):
-                self.renderer.zoom_by(1 if ev.button == 4 else -1)
-                return
             b.screen_mouse = ev.pos
             world = self.renderer.screen_to_world(ev.pos)
             # 按住手牌：先预览，松开时再决定是点击还是拖拽

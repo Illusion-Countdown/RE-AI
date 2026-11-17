@@ -31,9 +31,11 @@ class HandMixin:
                 # 槽位编号放在卡牌上方，避免压住圆角描边
                 bx, by = rect.x + 16, rect.y - 14
                 pygame.draw.circle(screen, (9, 13, 19), (bx, by), 11)
-                pygame.draw.circle(screen, card.color, (bx, by), 11, 1)
-                blit_text(screen, str(idx + 1), (bx, by), 9, WHITE,
-                          mono=True, anchor="center", bold=True)
+                pygame.draw.circle(screen, GOLD if selected else DIM2,
+                                   (bx, by), 11, 1)
+                blit_text(screen, str(idx + 1), (bx, by), 9,
+                          WHITE if selected else DIM,
+                          mono=True, anchor="center", bold=selected)
             self.hand_rects.append((rect, ("slot", idx), card))
 
         blit_text(screen, "1 2 3 选牌   ·   C 上一张   ·   SPACE 下一张",
@@ -42,5 +44,5 @@ class HandMixin:
         blit_text(screen, "FOCUS", (W - 238, H - 52), 9, DIM, mono=True)
         bar(screen, pygame.Rect(W - 238, H - 36, 174, 4),
             b.focus / max(1, b.focus_max), PURPLE)
-        blit_text(screen, "SHIFT 减速   ·   E 冲刺",
+        blit_text(screen, "中键减速   ·   E 冲刺",
                   (W - 24, H - 24), 10, DIM2, mono=True, anchor="topright")

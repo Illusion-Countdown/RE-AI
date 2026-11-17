@@ -542,7 +542,8 @@ class App:
         mvy = (1 if keys[pygame.K_s] or keys[pygame.K_DOWN] else 0) - \
               (1 if keys[pygame.K_w] or keys[pygame.K_UP] else 0)
         dash = keys[pygame.K_e]
-        plan = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+        # 按住鼠标中键减速；Shift 已改为切换上一张牌
+        plan = pygame.mouse.get_pressed()[1]
         return {"mvx": mvx, "mvy": mvy, "dash": dash,
                 "plan": plan, "mouse": pygame.mouse.get_pos()}
 

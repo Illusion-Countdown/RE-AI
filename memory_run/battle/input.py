@@ -67,8 +67,7 @@ class InputMixin:
         if mode == "edge":
             e = self.edge_at(pos[0], pos[1])
             if e is None:
-                self.nope("松手处没有引用线")
-                return False
+                return self.release_without_target(card, where)
             return self.use_card(card, where, target=e)
         if mode == "node":
             n = self.node_at(pos[0], pos[1])
@@ -102,7 +101,7 @@ class InputMixin:
             return
         if pygame.K_1 <= key <= pygame.K_3:
             self.select_slot(key - pygame.K_1)
-        elif key == pygame.K_c:
+        elif key in (pygame.K_c, pygame.K_LSHIFT, pygame.K_RSHIFT):
             self.cycle_card(-1)
         elif key == pygame.K_SPACE:
             self.cycle_card(1)
@@ -212,6 +211,8 @@ class InputMixin:
 
     def on_mouse_up(self, pos, button, mods=0):
         self.mouse = pos
+        if button != 1:
+            return
         if self.state != "playing" or not self.aim:
             self.edge_drag = None
             self.two_drag = None
@@ -228,7 +229,7 @@ class InputMixin:
             self.slash = []
             edges = self.edges_on_path(path)
             if not edges:
-                self.nope("划过的地方没有引用线")
+                self.release_without_target(card, self.aim["where"])
                 return
             self.use_card(card, self.aim["where"], target=edges)
         elif mode == "two" and self.aim["stage"] == 1 and self.two_drag:

@@ -19,6 +19,7 @@ ARENA = pygame.Rect(190, 52, 810, 480)
 SPRITE_W, SPRITE_H = 160, 90
 ASSET = Path(__file__).resolve().parent / "assets" / "chars"
 CUTIN_TIME = 0.9
+SLASH_MAX_LEN = 300.0
 
 INK = (7, 11, 17)
 PANEL = (13, 20, 29)
@@ -1055,6 +1056,7 @@ class Battle:
         self.world_offset = (0, 0)
         self.hitstop_count = 0
         self.targeting = None
+        self.mouse = (W // 2, H // 2)
         self.cutin = None
 
         self.skill_hits = []
@@ -1072,7 +1074,9 @@ class Battle:
         self.ds = Character("ds", "小忆", "DEEPSEEK", "伤害 · 远程", CYAN, self.p_ds, 330, 390)
         self.claude = Character("claude", "克劳", "CLAUDE", "辅助 · 治疗", AMBER, self.p_cl, 250, 420)
         self.chars = [self.ds, self.claude]
-        self.root = (405, 28)
+        self.roots = [(330, 28), (405, 28), (480, 28)]
+        self.root = self.roots[0]
+        self.root_cursor = 0
         self.enemies = []
         self.wave = 1
         self.wave_max = 3
@@ -1336,8 +1340,10 @@ class Battle:
             target.shield = 0.0
             target.shield_t = 0.0
         if impact:
-            sx = self.root[0] if link.source == "ROOT" else link.source.x
-            sy = self.root[1] if link.source == "ROOT" else link.source.y
+            if isinstance(link.source, tuple):
+                sx, sy = link.source[0], link.source[1] + 16
+            else:
+                sx, sy = link.source.x, link.source.y
             mx, my = (sx + target.x) / 2, (sy + target.y) / 2
             self.spawn_particles(mx, my, link.color, 10, 100)
             self.numbers.append({"x": mx, "y": my, "text": "CUT",
@@ -1392,7 +1398,9 @@ class Battle:
         e = Enemy(kind, x, y)
         self.enemies.append(e)
         if kind != "GC_CORE":
-            self.add_link("ROOT", e, "strong")
+            root = self.roots[self.root_cursor % len(self.roots)]
+            self.root_cursor += 1
+            self.add_link(root, e, "strong")
         # Avoid the first frame of a summon overlapping another enemy.
         self.separate_enemies(0.0)
         return e
@@ -1401,6 +1409,7 @@ class Battle:
         self.wave = wave
         self.enemies = []
         self.links = []
+        self.root_cursor = 0
         self.balls = []
         self.projectiles = []
         self.delayed_cuts = []
@@ -1442,7 +1451,9 @@ class Battle:
                 self.add_link(pylon, core, "support")
         for e in self.enemies:
             for _ in range(max(0, root_counts.get(e.kind, 1) - 1)):
-                self.add_link("ROOT", e, "strong")
+                root = self.roots[self.root_cursor % len(self.roots)]
+                self.root_cursor += 1
+                self.add_link(root, e, "strong")
         self.ds.x, self.ds.y = 330, 390
         self.claude.x, self.claude.y = 250, 420
         for e in self.enemies:
@@ -1717,6 +1728,13 @@ class Battle:
                     return c
         return None
 
+    def hover_target(self):
+        if self.targeting:
+            return self.pick_target(self.mouse)
+        if self.card_target is not None:
+            return self.enemy_at(self.mouse)
+        return None
+
     def cast_selected(self, kind):
         c = self.selected_char()
         if kind == "skill":
@@ -1771,7 +1789,8 @@ class Battle:
         if self.slash_armed is None or not ARENA.collidepoint(pos):
             return
         wx, wy = pos[0] - ARENA.x, pos[1] - ARENA.y
-        self.slash = {"card": self.slash_armed, "start": (wx, wy), "pos": (wx, wy), "links": []}
+        self.slash = {"card": self.slash_armed, "start": (wx, wy), "pos": (wx, wy),
+                      "links": [], "capped": False}
         self.slash_armed = None
         self.targeting = None
         self.card_target = None
@@ -1780,10 +1799,18 @@ class Battle:
     def update_slash(self, pos):
         if not self.slash:
             return
+        sx, sy = self.slash["start"]
         wx = max(0, min(ARENA.w, pos[0] - ARENA.x))
         wy = max(0, min(ARENA.h, pos[1] - ARENA.y))
+        dx, dy = wx - sx, wy - sy
+        dist = math.hypot(dx, dy)
+        capped = dist > SLASH_MAX_LEN
+        if capped and dist > 0:
+            k = SLASH_MAX_LEN / dist
+            wx, wy = sx + dx * k, sy + dy * k
+        self.slash["capped"] = capped
         self.slash["pos"] = (wx, wy)
-        self.slash["links"] = self.slash_hits(self.slash["start"], (wx, wy))
+        self.slash["links"] = self.slash_hits((sx, sy), (wx, wy))
 
     def cancel_slash(self):
         self.slash = None
@@ -2331,8 +2358,8 @@ class Battle:
             self.party_hits.append((i, r))
 
     def link_points(self, link):
-        if link.source == "ROOT":
-            sx, sy = self.root[0], self.root[1] + 16
+        if isinstance(link.source, tuple):
+            sx, sy = link.source[0], link.source[1] + 16
         else:
             sx, sy = link.source.x, link.source.y - link.source.r
         tx, ty = link.target.x, link.target.y - link.target.r
@@ -2417,7 +2444,8 @@ class Battle:
         pygame.draw.circle(self.world, (24, 37, 50), (w // 2, h // 2), 130, 1)
         # all reference edges, one curve per edge
         self.draw_links(self.world)
-        draw_root(self.world, self.root)
+        for root in self.roots:
+            draw_root(self.world, root)
         for e in self.enemies:
             if not e.alive:
                 continue
@@ -2458,11 +2486,16 @@ class Battle:
             sx, sy = self.slash["start"]
             ex, ey = self.slash["pos"]
             hot = bool(self.slash.get("links"))
-            col = (255, 240, 150) if hot else (130, 190, 210)
+            capped = self.slash.get("capped")
+            col = (255, 170, 95) if capped else ((255, 240, 150) if hot else (130, 190, 210))
             pygame.draw.line(self.world, (20, 30, 38), (sx, sy), (ex, ey), 7)
             pygame.draw.line(self.world, col, (sx, sy), (ex, ey), 3)
             pygame.draw.circle(self.world, col, (int(sx), int(sy)), 4, 1)
             pygame.draw.circle(self.world, col, (int(ex), int(ey)), 5, 1)
+            if capped:
+                pygame.draw.circle(self.world, (255, 190, 100), (int(ex), int(ey)), 10, 1)
+                self.text(self.world, "MAX", (int(ex) + 12, int(ey) - 14), (255, 190, 100),
+                          self.font11)
         # low-fidelity rendering: degrade the battlefield before target UI
         factor = self.fidelity_resolution_factor()
         if factor < 1.0:
@@ -2470,33 +2503,30 @@ class Battle:
                 self.world, (max(1, int(ARENA.w * factor)), max(1, int(ARENA.h * factor))))
             self.world = pygame.transform.scale(low, ARENA.size)
         if self.targeting or self.card_target is not None:
-            # dim the arena, then punch bright holes over valid targets
+            # Only the object actually under the cursor is a valid target and
+            # gets a highlight; everything else stays dimmed.
+            hover = self.hover_target()
             dim = pygame.Surface(ARENA.size, pygame.SRCALPHA)
-            dim.fill((0, 0, 0, 112))
-            if self.targeting and self.targeting["char"].cid == "claude":
-                for c in self.chars:
-                    if c.alive and not c.removed:
-                        pygame.draw.ellipse(dim, (0, 0, 0, 0),
-                                            (c.x - 42, c.y - 98, 84, 112))
-            else:
-                for e in self.enemies:
-                    if e.alive:
-                        pygame.draw.circle(dim, (0, 0, 0, 0),
-                                           (int(e.x), int(e.y)), e.r + 22)
+            dim.fill((0, 0, 0, 104))
+            if hover is not None:
+                if isinstance(hover, Enemy):
+                    pygame.draw.circle(dim, (0, 0, 0, 0),
+                                       (int(hover.x), int(hover.y)), hover.r + 22)
+                else:
+                    pygame.draw.ellipse(dim, (0, 0, 0, 0),
+                                        (hover.x - 42, hover.y - 98, 84, 112))
             self.world.blit(dim, (0, 0))
             pulse = 2 + int(2 * (0.5 + 0.5 * math.sin(self.time * 7)))
-            if self.targeting and self.targeting["char"].cid == "claude":
-                for c in self.chars:
-                    if c.alive and not c.removed:
-                        pygame.draw.ellipse(self.world, (130, 255, 190),
-                                            (c.x - 38, c.y - 3, 76, 16), 2 + pulse // 2)
-                        self.text(self.world, "友方目标", (c.x, c.y - 104),
-                                  (150, 255, 195), self.font11, center=True)
-            else:
-                for e in self.enemies:
-                    if e.alive:
-                        pygame.draw.circle(self.world, (255, 220, 100),
-                                           (int(e.x), int(e.y)), e.r + 15 + pulse, 2)
+            if isinstance(hover, Enemy):
+                pygame.draw.circle(self.world, (255, 220, 100),
+                                   (int(hover.x), int(hover.y)), hover.r + 15 + pulse, 2)
+                self.text(self.world, "目标", (int(hover.x), int(hover.y - hover.r - 46)),
+                          (255, 225, 120), self.font11, center=True)
+            elif hover is not None:
+                pygame.draw.ellipse(self.world, (130, 255, 190),
+                                    (hover.x - 38, hover.y - 3, 76, 16), 2 + pulse // 2)
+                self.text(self.world, "友方目标", (hover.x, hover.y - 104),
+                          (150, 255, 195), self.font11, center=True)
         # projectiles
         for p in self.projectiles:
             pygame.draw.circle(self.world, p.color, (int(p.x), int(p.y)), p.radius)
@@ -2736,7 +2766,9 @@ class Battle:
             hit_n = len(self.slash.get("links", [])) if self.slash else 0
             self.text(s, f"拖动划过引用线 · {info['cn']}：{info['desc']}",
                       (520, 548), TEXT, self.font11)
-            self.text(s, f"命中 {hit_n} 条 · 右键取消" if self.slash else "松开执行 · 右键取消",
+            cap_txt = " · MAX" if self.slash and self.slash.get("capped") else ""
+            self.text(s, (f"命中 {hit_n} 条{cap_txt} · 右键取消" if self.slash
+                          else "松开执行 · 右键取消"),
                       (1080, 548), (190, 230, 240), self.font10 if hasattr(self, "font10") else self.font11)
         elif self.card_target is not None and 0 <= self.card_target < len(self.hand) and self.hand[self.card_target]:
             card = self.hand[self.card_target]
@@ -2879,6 +2911,7 @@ class Battle:
 
     # ------------------------------------------------------------ input
     def handle_click(self, pos, button=1):
+        self.mouse = pos
         if self.cutin:
             return
         if self.slash_armed is not None:
@@ -3005,7 +3038,8 @@ class Battle:
                         self.windowed = not self.windowed
                         self._set_window()
                 elif e.type == pygame.MOUSEMOTION:
-                    self.update_slash(self.to_logical(e.pos))
+                    self.mouse = self.to_logical(e.pos)
+                    self.update_slash(self.mouse)
                 elif e.type == pygame.MOUSEBUTTONDOWN:
                     self.handle_click(self.to_logical(e.pos), e.button)
                 elif e.type == pygame.MOUSEBUTTONUP and e.button == 1:

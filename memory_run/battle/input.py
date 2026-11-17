@@ -183,6 +183,9 @@ class InputMixin:
             return
         card = self.aim["card"]
         mode = card.d["target"]
+        if mode in ("self", "dead"):
+            # 纠错码、压缩等不需要目标：左键点战场任意处直接释放
+            return self.use_card(card, self.aim["where"])
         if mode == "two":
             n = self.node_at(*pos)
             if n is None:

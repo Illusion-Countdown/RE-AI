@@ -139,5 +139,15 @@ b2.on_mouse_down((target.x, target.y), 1)
 assert target.data.get("cast_stripped") or target.stun > 0
 print("default aim click ok")
 
+# self-target card: left click anywhere releases it
+b2.state = "playing"
+b2.work_used = 0.0
+b2.hand.slots[1] = Card("COMPRESS")
+b2.selected = 1
+b2.aim_selected()
+assert b2.on_mouse_down((10, 10), 1), b2.toast_msg
+assert b2.compress_t > 0
+print("self card click anywhere ok")
+
 print("MECHANICS OK")
 pygame.quit()

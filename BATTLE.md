@@ -338,7 +338,7 @@ STEAL            +10
   - 该槽立即变为 `EMPTY SLOT`
   - 右侧技能列表对应卡牌进入 CD，显示灰色遮挡 + 数字
   - CD 结束后卡牌移动回未冷却区域，并重新进入空手牌位
-- 技能 CD 示例：CUT 3.5s、WEAK 6s、CLIP 10s、SWEEP 10s
+- 技能 CD 示例：CUT 5s、WEAK 9s、TRUNC 9s、CLIP 12s、ECC 12s、SWEEP 14s
 
 ## 右侧技能列表
 

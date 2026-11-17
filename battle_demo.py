@@ -633,10 +633,10 @@ CARD_POOL = list(CARD_INFO.keys())
 SLASH_CARDS = {"CUT", "CLIP", "SWEEP", "WEAK", "TRUNC", "DOWN"}
 
 MEMORY_CD = {
-    "CUT": 3.5, "CLIP": 10.0, "SWEEP": 10.0, "WEAK": 6.0,
-    "WEAKEN": 7.0, "LINK": 8.0, "VOID": 9.0, "TRUNC": 6.0,
-    "DELAY": 7.0, "REFLECT": 8.0, "ALIAS": 8.0, "STEAL": 6.0,
-    "COMPRESS": 10.0, "ECC": 7.0, "LOSSY": 9.0, "DOWN": 5.0,
+    "CUT": 5.0, "CLIP": 12.0, "SWEEP": 14.0, "WEAK": 9.0,
+    "WEAKEN": 10.0, "LINK": 10.0, "VOID": 12.0, "TRUNC": 9.0,
+    "DELAY": 10.0, "REFLECT": 12.0, "ALIAS": 12.0, "STEAL": 10.0,
+    "COMPRESS": 14.0, "ECC": 12.0, "LOSSY": 12.0, "DOWN": 8.0,
 }
 
 # 8x8 内存版，8 张已装载技能，存在 2 处重叠。

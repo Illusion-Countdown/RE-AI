@@ -610,7 +610,7 @@ class Boss:
 
 CARD_INFO = {
     "CUT": {"cn": "断链剪", "en": "CUT", "color": (80, 214, 255), "desc": "剪 1 条引用"},
-    "CLIP": {"cn": "尽剪", "en": "CLIP", "color": (90, 220, 245), "desc": "剪全部引用"},
+    "CLIP": {"cn": "尽剪", "en": "CLIP", "color": (90, 220, 245), "desc": "清空首个命中敌人"},
     "SWEEP": {"cn": "扫链", "en": "SWEEP", "color": (90, 230, 210), "desc": "全体各剪 1 层"},
     "WEAK": {"cn": "窥弱印", "en": "WEAK", "color": (185, 140, 255), "desc": "受伤 +35% / 6s"},
     "WEAKEN": {"cn": "降级刻", "en": "WEAKEN", "color": (160, 150, 255), "desc": "剪 1 层并弱化"},
@@ -633,7 +633,7 @@ CARD_POOL = list(CARD_INFO.keys())
 SLASH_CARDS = {"CUT", "CLIP", "SWEEP", "WEAK", "TRUNC", "DOWN"}
 
 MEMORY_CD = {
-    "CUT": 3.5, "CLIP": 8.0, "SWEEP": 10.0, "WEAK": 6.0,
+    "CUT": 3.5, "CLIP": 10.0, "SWEEP": 10.0, "WEAK": 6.0,
     "WEAKEN": 7.0, "LINK": 8.0, "VOID": 9.0, "TRUNC": 6.0,
     "DELAY": 7.0, "REFLECT": 8.0, "ALIAS": 8.0, "STEAL": 6.0,
     "COMPRESS": 10.0, "ECC": 7.0, "LOSSY": 9.0, "DOWN": 5.0,
@@ -1794,8 +1794,19 @@ class Battle:
             cut_links = []
             valid_effect = bool(targets)
         elif key == "CLIP":
-            cut_links = links
-            valid_effect = True
+            # CLIP is a single-target finisher: clear every incoming link of
+            # the first enemy hit, not every enemy touched by the swipe.
+            def first_dist(l):
+                return min(math.hypot(px - start[0], py - start[1])
+                           for px, py in self.link_points(l))
+            first = min(links, key=first_dist)
+            target = first.target
+            cut_links = [l for l in target.refs if l.alive]
+            valid_effect = bool(cut_links)
+            if valid_effect:
+                self.numbers.append({"x": target.x, "y": target.y - target.r - 42,
+                                     "text": "CLIP", "color": CYAN,
+                                     "t": 0.0, "life": 0.7, "vy": -20})
         else:
             strong = [l for l in links if l.kind in ("strong", "cycle")]
             if key == "CUT":

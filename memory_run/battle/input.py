@@ -3,56 +3,47 @@ from .deps import *
 
 class InputMixin:
     def select_slot(self, i):
-        if self.state != "playing":
+        if self.state != "playing" or not 0 <= i < len(self.hand.slots):
             return
         self.drag_active = False
         card = self.hand.slots[i]
         if card is None:
-            self.nope("这个执行槽是空的")
+            self.nope("这个手牌槽是空的")
             return
+        self.selected = i
         if self.aim and self.aim.get("card") is card:
             self.aim = None
             return
         self.aim = {"card": card, "where": ("slot", i), "stage": 0, "src": None}
-        mode = card.d["target"]
-        if mode in ("self", "dead"):
-            self.use_card(card, ("slot", i))
 
-    def select_reserve(self, i):
-        if i >= len(self.hand.reserve):
+    def cycle_card(self, delta):
+        if self.state != "playing":
             return
-        card = self.hand.reserve[i]
-        if card is None:
+        if not any(self.hand.slots):
+            self.nope("手牌是空的")
             return
-        self.aim = {"card": card, "where": ("reserve", i), "stage": 0, "src": None}
-        if card.d["target"] in ("self", "dead"):
-            self.use_card(card, ("reserve", i))
-
-    def select_overflow(self, i):
-        if i >= len(self.hand.overflow):
-            return
-        card = self.hand.overflow[i]
-        if card is None:
-            return
-        self.aim = {"card": card, "where": ("overflow", i), "stage": 0, "src": None}
-        if card.d["target"] in ("self", "dead"):
-            self.use_card(card, ("overflow", i))
+        for step in range(1, len(self.hand.slots) + 1):
+            idx = (self.selected + delta * step) % len(self.hand.slots)
+            card = self.hand.slots[idx]
+            if card is not None:
+                self.selected = idx
+                self.drag_active = False
+                self.aim = {"card": card, "where": ("slot", idx),
+                            "stage": 0, "src": None}
+                return
 
     # 拖拽：按住手牌 -> 拖到世界 -> 松开
 
     def card_in(self, where, idx):
-        if where == "slot":
-            return self.hand.slots[idx] if idx < 5 else None
-        if where == "reserve":
-            return self.hand.reserve[idx] if idx < len(self.hand.reserve) else None
-        if where == "overflow":
-            return self.hand.overflow[idx] if idx < len(self.hand.overflow) else None
+        if where == "slot" and 0 <= idx < len(self.hand.slots):
+            return self.hand.slots[idx]
         return None
 
     def preview_card(self, where, idx):
         card = self.card_in(where, idx)
         if card is None:
             return
+        self.selected = idx
         self.aim = {"card": card, "where": (where, idx),
                     "stage": 0, "src": None}
         self.drag_active = True
@@ -62,6 +53,7 @@ class InputMixin:
         if card is None:
             self.nope("这张卡已经不在手牌里了")
             return
+        self.selected = idx
         self.aim = {"card": card, "where": (where, idx),
                     "stage": 0, "src": None}
         self.drag_active = False
@@ -111,32 +103,18 @@ class InputMixin:
     def on_key(self, key, mods=0):
         if self.state != "playing":
             return
-        if pygame.K_1 <= key <= pygame.K_5:
+        if pygame.K_1 <= key <= pygame.K_3:
             self.select_slot(key - pygame.K_1)
-        elif key == pygame.K_q:
-            self.redraw()
+        elif key == pygame.K_c:
+            self.cycle_card(-1)
+        elif key == pygame.K_SPACE:
+            self.cycle_card(1)
         elif key == pygame.K_g:
             self.free_gc()
         elif key == pygame.K_r:
             self.necro_bomb()
         elif key == pygame.K_t:
             self.dead_code()
-
-    def redraw(self):
-        if self.redraw_used:
-            self.nope("本房间已经重抽过了")
-            return
-        if not self.pile:
-            self.reshuffle()
-        self.redraw_used = True
-        dropped = self.hand.discard_all()
-        self.discarded.extend(dropped)
-        for _ in range(3):
-            self.draw_one(initial=True)
-        self.toast("重抽：弃掉手牌，抽 3 张（本房一次）")
-        self.fx.add_ring(self.player_node.x, self.player_node.y, 10, 70,
-                         PURPLE, 0.5, 2)
-        audio.play("select")
 
     def free_gc(self):
         if not self.run.has_rule("free_gc") or self.free_gc_used:

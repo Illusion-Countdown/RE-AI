@@ -146,7 +146,6 @@ class Deck:
         self.cards = []
         self.vault = []
         self.rd_cap = 100
-        self.reshuffle_penalty = 0
 
     # ------------------------------------------------------------ 起始
     def start(self):
@@ -194,8 +193,7 @@ class Deck:
         load = occupied + dead
         free = max(1, total - load)
         base = 100 - 50.0 * load / max(1, total) - 50.0 * work_used / free
-        cap = self.rd_cap - self.reshuffle_penalty
-        return max(0.0, min(float(cap), base))
+        return max(0.0, min(float(self.rd_cap), base))
 
     def quality_band(self, q=None):
         q = self.quality() if q is None else q
@@ -237,121 +235,43 @@ class Deck:
 
 
 class Hand:
-    """5 执行槽 + 1 备用 + 2 溢出；一张卡一次使用。"""
+    """3 张手牌；没有备用槽，也没有溢出槽。"""
 
-    def __init__(self, reserve_max=1, overflow_max=2):
-        self.slots = [None] * 5
-        self.reserve = [None] * reserve_max
-        self.overflow = [None] * overflow_max
-        self.used = []
-        self.discarded = []
-        self.destroyed = []
+    LIMIT = 3
+
+    def __init__(self):
+        self.slots = [None] * self.LIMIT
         self.msg = ""
 
     def total(self):
-        return (sum(1 for x in self.slots if x) +
-                sum(1 for x in self.reserve if x) +
-                sum(1 for x in self.overflow if x))
+        return sum(1 for x in self.slots if x)
 
     def add(self, card):
         for i, c in enumerate(self.slots):
             if c is None:
                 self.slots[i] = card
                 self.msg = f"抽到 {card.name} → 槽 {i + 1}"
-                return "slot"
-        for i, c in enumerate(self.reserve):
-            if c is None:
-                self.reserve[i] = card
-                self.msg = f"抽到 {card.name} → 备用"
-                return "reserve"
-        for i, c in enumerate(self.overflow):
-            if c is None:
-                self.overflow[i] = card
-                self.msg = f"抽到 {card.name} → 溢出（下次抽牌销毁）"
-                return "overflow"
-        self.destroyed.append(card)
-        self.msg = f"手牌溢出：{card.name} 被销毁"
-        return "destroyed"
+                return i
+        self.msg = f"手牌已满：{card.name} 留在牌堆"
+        return None
 
     def take_slot(self, i):
         card = self.slots[i]
         if card is None:
             return None
         self.slots[i] = None
-        self.used.append(card)
-        return card
-
-    def take_reserve(self, i):
-        card = self.reserve[i]
-        if card is None:
-            return None
-        self.reserve[i] = None
-        self.used.append(card)
-        return card
-
-    def take_overflow(self, i):
-        card = self.overflow[i]
-        if card is None:
-            return None
-        self.overflow[i] = None
-        self.used.append(card)
         return card
 
     def free_slots(self):
         return sum(1 for c in self.slots if c is None)
 
-    def refill(self):
-        """使用后，备用/溢出按顺序补进空槽。"""
-        for i, c in enumerate(self.slots):
-            if c is not None:
-                continue
-            src = None
-            for j, x in enumerate(self.reserve):
-                if x is not None:
-                    self.reserve[j] = None
-                    src = x
-                    break
-            if src is None:
-                for j, x in enumerate(self.overflow):
-                    if x is not None:
-                        self.overflow[j] = None
-                        src = x
-                        break
-            if src is not None:
-                self.slots[i] = src
-
-    def clear_overflow(self):
-        out = [c for c in self.overflow if c is not None]
-        self.overflow = [None] * len(self.overflow)
-        self.destroyed.extend(out)
-        return out
-
     def discard_all(self):
-        out = [c for c in self.slots + self.reserve + self.overflow if c]
-        self.slots = [None] * 5
-        self.reserve = [None] * len(self.reserve)
-        self.overflow = [None] * len(self.overflow)
-        self.discarded.extend(out)
+        out = [c for c in self.slots if c]
+        self.slots = [None] * self.LIMIT
         return out
 
     def find_card(self, card):
         for i, c in enumerate(self.slots):
             if c is card:
                 return ("slot", i)
-        for i, c in enumerate(self.reserve):
-            if c is card:
-                return ("reserve", i)
-        for i, c in enumerate(self.overflow):
-            if c is card:
-                return ("overflow", i)
         return None
-
-
-def draw_three(hand, pile, used, rng):
-    n = 0
-    for _ in range(3):
-        if not pile:
-            break
-        hand.add(pile.pop())
-        n += 1
-    return n

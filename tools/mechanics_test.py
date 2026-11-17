@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""无头验证：自动抽牌、CUT 代价、LINK 分摊、WEAK 增伤。"""
+"""无头验证：三张手牌、单次回收、CUT 代价、LINK 分摊、WEAK 增伤。"""
 import os
 import sys
 
@@ -35,16 +35,40 @@ app = App(fullscreen=False, headless=True)
 app.new_run(False)
 app.start_battle()
 b = app.battle
+b.state = "playing"
+b.intro_t = 0
 
-# auto draw
-for c in list(b.hand.slots):
-    if c:
-        b.used.append(c)
-b.hand.slots = [None] * 5
-b.draw_timer = 0.01
-b.update_draw(0.1)
-assert any(b.hand.slots), "auto draw failed"
-print("auto draw ok", b.hand.slots[0].key)
+# 3-card hand, no overflow; C/Space rotate selection
+assert len(b.hand.slots) == 3
+assert b.hand.total() == 3
+assert not hasattr(b.hand, "overflow")
+first = b.selected
+b.cycle_card(1)
+assert b.selected == (first + 1) % 3
+b.cycle_card(-1)
+assert b.selected == first
+print("hand rotation ok")
+
+# first use returns to pile; second use retires for this room
+card = b.hand.slots[0]
+b.hand.take_slot(0)
+b.recycle_after_use(card)
+assert card in b.pile, "first use should return card to pile"
+b.pile.remove(card)
+b.hand.slots[0] = card
+b.hand.take_slot(0)
+b.recycle_after_use(card)
+assert card not in b.pile, "second use must not return card"
+assert card in b.used, "second use should retire card"
+assert b.card_uses[card.uid] == 2
+print("single recycle ok")
+
+# next room recalculates use counts and starts with 3 cards
+b.shuffle_room()
+assert b.hand.total() == 3
+assert b.card_uses == {}
+assert b.used == []
+print("room reset ok")
 
 # cut cost
 cut = next(c for c in b.deck.cards if c.key == "CUT")
@@ -81,6 +105,25 @@ before_dead = len(b2.deck.grid.dead)
 assert b2.use_card(ecc, ("slot", 0)), b2.toast_msg
 assert len(b2.deck.grid.dead) == before_dead - 1
 print("ecc repair ok")
+
+# using a card immediately draws one replacement while the pile has cards
+b2.shuffle_room()
+b2.hand.slots[0] = Card("COMPRESS")
+before_pile = len(b2.pile)
+assert b2.use_card(b2.hand.slots[0], ("slot", 0)), b2.toast_msg
+assert b2.hand.total() == 3, "use should refill the hand"
+assert len(b2.pile) == before_pile - 1, "use should draw exactly one card"
+print("use draw ok")
+
+# empty pile: no replacement draw
+b2.shuffle_room()
+b2.pile = []
+empty = Card("COMPRESS")
+b2.hand.slots[0] = empty
+assert b2.use_card(empty, ("slot", 0)), b2.toast_msg
+assert b2.hand.total() == 2, "empty pile must not draw"
+assert empty in b2.used
+print("empty pile no draw ok")
 
 print("MECHANICS OK")
 pygame.quit()

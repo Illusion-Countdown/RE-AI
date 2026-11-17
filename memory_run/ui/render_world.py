@@ -185,6 +185,24 @@ class WorldMixin:
             a = ang + i * math.tau / 3
             pygame.draw.arc(surf, with_alpha(CYAN, 170),
                             (x - 24, y - 24, 48, 48), a, a + 1.1, 2)
+        # 头顶手牌球：左=上一张，中=当前选中，右=下一张
+        order = b.hand_order()
+        orbs = [order[2][1], order[0][1], order[1][1]]
+        spots = [(-50, -26), (0, -48), (50, -26)]
+        for i, (card, (dx, dy)) in enumerate(zip(orbs, spots)):
+            oxp, oyp = x + dx, y + dy
+            if card is None:
+                pygame.draw.circle(surf, (26, 34, 44), (int(oxp), int(oyp)),
+                                   9, 1)
+                continue
+            col = card.color
+            glow(surf, oxp, oyp, 30, col, 0.36)
+            pygame.draw.circle(surf, dim(col, 0.35), (int(oxp), int(oyp)), 9)
+            pygame.draw.circle(surf, col, (int(oxp), int(oyp)), 9, 2)
+            pygame.draw.circle(surf, mix(col, WHITE, 0.55),
+                               (int(oxp), int(oyp)), 3)
+            if i == 1:
+                pygame.draw.circle(surf, GOLD, (int(oxp), int(oyp)), 13, 2)
         if b.iframe > 0:
             a = int(120 + 100 * math.sin(self.t * 20))
             pygame.draw.circle(surf, with_alpha(WHITE, a), (int(x), int(y)),

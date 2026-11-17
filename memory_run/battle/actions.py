@@ -42,16 +42,12 @@ class ActionsMixin:
             # 费用已经付出，但无效目标不该吃掉卡：把工作内存退回
             self.work_used = max(0.0, self.work_used - self.card_work(card))
             return False
-        kind, idx = where
-        if kind == "slot":
-            self.hand.take_slot(idx)
-        elif kind == "reserve":
-            self.hand.take_reserve(idx)
-        else:
-            self.hand.take_overflow(idx)
-        self.hand.refill()
-        if self.hand.free_slots() > 0:
-            self.draw_timer = min(self.draw_timer, 0.65)
+        _kind, idx = where
+        self.hand.take_slot(idx)
+        # 先抽牌：牌堆已空时不补抽；随后再处理这张卡的单次回收
+        self.draw_one()
+        self.recycle_after_use(card)
+        self.normalize_selection()
         self.aim = None
         self.edge_drag = None
         self.stats["cards"] += 1

@@ -10,13 +10,12 @@ W, H = 1600, 900
 FPS = 60
 
 TOPBAR = pygame.Rect(0, 0, W, 72)
-LEFTPANEL = pygame.Rect(0, 72, 248, 714)
-ARENA = pygame.Rect(252, 78, 1052, 704)
-RIGHT = pygame.Rect(1308, 78, 292, 704)
+LEFTPANEL = pygame.Rect(0, 0, 0, 0)
+ARENA = pygame.Rect(0, 0, W, H)
+RIGHT = pygame.Rect(0, 0, 0, 0)
 BAND = 0                       # 本作不做越界，保留常量兼容
-PLAY = pygame.Rect(ARENA.x + 12, ARENA.y + 12,
-                   ARENA.w - 24, ARENA.h - 24)
-BOTTOM = pygame.Rect(0, 786, W, H - 786)
+PLAY = pygame.Rect(0, 0, W, H - 140)
+BOTTOM = pygame.Rect(0, H - 140, W, 140)
 
 # ---------------------------------------------------------------- 调色
 BG          = (7, 9, 13)

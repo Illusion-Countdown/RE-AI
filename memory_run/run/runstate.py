@@ -31,7 +31,6 @@ class RunState:
         self.shards = 0
         self.score = 0
         self.step = 0 if tutorial else TUTORIAL_COUNT
-        self.draw_bonus = 0.0
         self.modules = []
         self.rules = []
         self.bosses_cleared = 0
@@ -81,16 +80,13 @@ class RunState:
         for r in BOSS_RULES:
             if r["id"] == rid and not self.has_rule(rid):
                 self.rules.append(r)
-                if rid == "reg":
-                    self.draw_bonus = 0.5
-                elif rid == "grid":
+                if rid == "grid":
                     self._expand(1, 1)
                 return True
         return False
 
     # ------------------------------------------------------------ 房间生命周期
     def begin_room(self):
-        self.deck.reshuffle_penalty = 0
         self.deck.rd_cap = (100, 75, 50)[self.rd_choice]
         self.room_dead_snapshot = set(self.deck.grid.dead)
         self.last_room = {
@@ -112,7 +108,6 @@ class RunState:
         snap = getattr(self, "room_dead_snapshot", None)
         if snap is not None:
             self.deck.grid.dead = set(snap)
-        self.deck.reshuffle_penalty = 0
         self.deck.rd_cap = (100, 75, 50)[self.rd_choice]
 
     def complete_room(self, cleared, quality, damage, new_dead, time_used):

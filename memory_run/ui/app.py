@@ -72,7 +72,6 @@ class App:
             self.notice = "音频设备不可用；画面与操作不受影响"
             self.notice_t = 4.0
         self.shot_mode = False
-        self.dash_pulse = 0.0
         self.card_press = None
 
     # ================================================================ 流程
@@ -90,6 +89,7 @@ class App:
             return
         self.run.begin_room()
         self.battle = Battle(self.run, FX())
+        self.renderer.reset_camera()
         self.state = "battle"
         self._finished_handled = False
         self.result = None
@@ -400,21 +400,27 @@ class App:
         b = self.battle
         if b is None:
             return
+        if ev.type == pygame.MOUSEWHEEL:
+            self.renderer.zoom_by(ev.y)
+            return
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_ESCAPE:
                 self.state = "pause"
                 return
-            if ev.key == pygame.K_LSHIFT:
-                self.dash_pulse = 0.1
             b.on_key(ev.key, pygame.key.get_mods())
         elif ev.type == pygame.MOUSEMOTION:
-            b.on_mouse_move(ev.pos)
+            b.screen_mouse = ev.pos
+            b.on_mouse_move(self.renderer.screen_to_world(ev.pos))
             if self.card_press is not None:
                 sx, sy = self.card_press["pos"]
                 if abs(ev.pos[0] - sx) + abs(ev.pos[1] - sy) > 8:
                     self.card_press["moved"] = True
         elif ev.type == pygame.MOUSEBUTTONDOWN:
-            b.mouse = ev.pos
+            if ev.button in (4, 5):
+                self.renderer.zoom_by(1 if ev.button == 4 else -1)
+                return
+            b.screen_mouse = ev.pos
+            world = self.renderer.screen_to_world(ev.pos)
             # 按住手牌：先预览，松开时再决定是点击还是拖拽
             for rect, where, card in self.renderer.hand_rects:
                 if ev.button == 1 and card is not None and rect.collidepoint(ev.pos):
@@ -429,22 +435,26 @@ class App:
                 self.card_press = None
                 b.aim = None
                 b.drag_active = False
-            b.on_mouse_down(ev.pos, ev.button, pygame.key.get_mods())
+            b.on_mouse_down(world, ev.button, pygame.key.get_mods())
         elif ev.type == pygame.MOUSEBUTTONUP:
+            b.screen_mouse = ev.pos
+            world = self.renderer.screen_to_world(ev.pos)
             if self.card_press is not None:
                 press = self.card_press
                 self.card_press = None
                 b.drag_active = False
                 if press["moved"]:
-                    if BOTTOM.collidepoint(ev.pos) or not ARENA.collidepoint(ev.pos):
+                    over_hand = any(r.collidepoint(ev.pos)
+                                    for r, _w, _c in self.renderer.hand_rects)
+                    if over_hand or BOTTOM.collidepoint(ev.pos):
                         b.aim = None
                     else:
-                        b.drop_card_at(ev.pos)
+                        b.drop_card_at(world)
                 else:
                     b.aim = None
                     b.select_where(press["where"], press["idx"], immediate=True)
                 return
-            b.on_mouse_up(ev.pos, ev.button, pygame.key.get_mods())
+            b.on_mouse_up(world, ev.button, pygame.key.get_mods())
 
     def ev_pause(self, ev):
         if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
@@ -539,11 +549,10 @@ class App:
               (1 if keys[pygame.K_a] or keys[pygame.K_LEFT] else 0)
         mvy = (1 if keys[pygame.K_s] or keys[pygame.K_DOWN] else 0) - \
               (1 if keys[pygame.K_w] or keys[pygame.K_UP] else 0)
-        dash = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT] or self.dash_pulse > 0
-        if self.dash_pulse > 0:
-            self.dash_pulse -= 1 / 60
+        dash = keys[pygame.K_e]
+        plan = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
         return {"mvx": mvx, "mvy": mvy, "dash": dash,
-                "plan": keys[pygame.K_SPACE], "mouse": pygame.mouse.get_pos()}
+                "plan": plan, "mouse": pygame.mouse.get_pos()}
 
     # ================================================================ 绘制
     def draw(self):

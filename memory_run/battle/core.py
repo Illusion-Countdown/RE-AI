@@ -32,14 +32,15 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.pending_cuts = []
         self.pending_explosions = []
         self.aliases = []
-        self.hand = Hand(reserve_max=1, overflow_max=2)
+        self.hand = Hand()
         self.pile = []
-        self.used = []
+        self.used = []              # 本房第二次使用后不再回收的卡
         self.discarded = []
         self.destroyed = []
-        self.reshuffled = False
-        self.draw_timer = max(1.2, 2.4 - self.run.draw_bonus)
-        self.redraw_used = False
+        self.returned = 0           # 本房已随机放回牌堆的次数
+        self.card_uses = {}         # uid -> 本房使用次数
+        self.selected = 0           # 当前选中手牌槽
+        self.screen_mouse = (W // 2, H // 2)
         self.work_used = 0.0
         self.work_regen = self.run.body.get("regen", 1.7)
         self.quality_penalty = 0.0
@@ -151,7 +152,12 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
 
     def shuffle_room(self):
         self.pile = self.run.deck.room_pile(self.run.rng)
-        self.hand = Hand(reserve_max=1, overflow_max=2)
+        self.hand = Hand()
+        self.used = []
+        self.discarded = []
+        self.returned = 0
+        self.card_uses = {}
+        self.selected = 0
         tut = self.room.get("tut")
         if tut:
             # 教程不靠抽牌运气：把这一课需要的卡直接塞进起手
@@ -161,20 +167,35 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
                 "link": ["LINK", "CUT", "CUT"],
                 "cast": ["TRUNC", "CUT"],
             }.get(tut, ["CUT"])
-            have = {c.key for c in self.pile}
             for key in need:
                 # 直接造一张临时卡；它不属于牌组，用完即消失
-                card = Card(key)
-                self.hand.add(card)
-                have.add(key)
-            for _ in range(3 - len(need)):
-                if self.pile:
-                    self.hand.add(self.pile.pop())
+                self.hand.add(Card(key))
+            while self.hand.total() < Hand.LIMIT:
+                if self.draw_one(initial=True) is None:
+                    break
         else:
-            for _ in range(3):
+            for _ in range(Hand.LIMIT):
                 self.draw_one(initial=True)
         self.fx.add_text(self.player_node.x, self.player_node.y - 40,
                          "DECK ONLINE", CYAN, 18, 1.2)
+
+    # ================================================================ 手牌顺序
+
+    def hand_order(self):
+        """返回 [选中, 下一张, 上一张]；底部 UI 以选中牌为中心。"""
+        return [(idx, self.hand.slots[idx])
+                for idx in ((self.selected % 3, (self.selected + 1) % 3,
+                             (self.selected + 2) % 3))]
+
+    def normalize_selection(self):
+        if self.hand.slots[self.selected] is not None:
+            return
+        for step in range(Hand.LIMIT):
+            idx = (self.selected + step) % Hand.LIMIT
+            if self.hand.slots[idx] is not None:
+                self.selected = idx
+                return
+        self.selected = 0
 
     # ================================================================ 查询
 
@@ -220,35 +241,38 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
 
     # ================================================================ 抽牌
 
-    def reshuffle(self):
-        if not self.used:
-            return False
-        self.pile = list(self.used)
-        self.used = []
-        self.run.rng.shuffle(self.pile)
-        self.reshuffled = True
-        self.deck.reshuffle_penalty = min(42, self.deck.reshuffle_penalty + 6)
-        self.toast("牌堆洗回｜本房画质上限 -6%（可重复，代价递增）")
-        self.fx.add_glitch(0.22)
-        return True
-
     def draw_one(self, initial=False):
-        if not self.pile and not self.reshuffle():
+        """从牌堆顶抽 1 张；牌堆空或手牌满时什么也不做。"""
+        if self.hand.free_slots() <= 0:
             return None
-        # 坏死格上的卡不能抽出来
+        # 坏死格上的卡不能抽出来，本房暂时放在一边
         while self.pile and self.pile[-1].anchor and \
                 self.deck.grid.card_corroded(self.pile[-1]):
             self.used.append(self.pile.pop())
         if not self.pile:
             return None
-        if not initial:
-            self.hand.clear_overflow()
         card = self.pile.pop()
         where = self.hand.add(card)
-        if where != "destroyed":
-            self.fx.add_text(self.player_node.x, self.player_node.y - 54,
-                             f"{card.name}", card.color, 14, 0.8)
+        if where is None:
+            self.pile.append(card)
+            return None
+        self.fx.add_text(self.player_node.x, self.player_node.y - 54,
+                         f"{card.name}", card.color, 14, 0.8)
         return card
+
+    def recycle_after_use(self, card):
+        """第一次使用后随机放回牌堆；第二次使用后本房不再回收。"""
+        uses = self.card_uses.get(card.uid, 0) + 1
+        self.card_uses[card.uid] = uses
+        if card in self.deck.cards and uses == 1:
+            if self.run.has_rule("reg"):
+                self.pile.append(card)      # 回收置顶
+            else:
+                self.pile.insert(self.run.rng.randint(0, len(self.pile)), card)
+            self.returned += 1
+            return "returned"
+        self.used.append(card)
+        return "retired"
 
     # ================================================================ 输入
 
@@ -284,7 +308,6 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.time += wdt
         self.update_player(wdt, inp)
         self.update_work(wdt)
-        self.update_draw(dt)
         self.update_status(wdt)
         self.update_enemies(wdt)
         self.update_waves(wdt)

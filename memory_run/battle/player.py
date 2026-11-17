@@ -61,16 +61,6 @@ class PlayerMixin:
         if self.work_used > 0:
             self.work_used = max(0.0, self.work_used - dt / self.work_regen)
 
-    def update_draw(self, dt):
-        self.draw_timer -= dt
-        if self.draw_timer <= 0:
-            # 手牌满时不浪费抽牌；一旦空出槽位立刻补
-            if self.hand.free_slots() <= 0:
-                self.draw_timer = 0.25
-                return
-            self.draw_one()
-            self.draw_timer = max(1.2, 2.4 - self.run.draw_bonus)
-
     def update_status(self, dt):
         if self.banner_t > 0:
             self.banner_t -= dt

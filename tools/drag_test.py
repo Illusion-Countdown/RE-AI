@@ -62,9 +62,10 @@ def main():
              None)
     assert e is not None, "drag_test needs a SENTINEL edge"
     p = e.points(18)[9]
+    ps = a.renderer.world_to_screen(p)
     a.handle_event(down(rr.center))
-    a.handle_event(move(p))
-    a.handle_event(up(p))
+    a.handle_event(move(ps))
+    a.handle_event(up(ps))
     assert not e.alive, "CUT drag did not cut the target edge"
     assert b.state == "clear", b.state
     print("SINGLE DRAG OK")

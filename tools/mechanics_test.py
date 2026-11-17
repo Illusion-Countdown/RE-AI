@@ -42,9 +42,12 @@ b.intro_t = 0
 assert len(b.hand.slots) == 3
 assert b.hand.total() == 3
 assert not hasattr(b.hand, "overflow")
+assert b.selected == 1
+assert b.aim and b.aim["card"] is b.hand.slots[1]
 first = b.selected
 b.cycle_card(1)
 assert b.selected == (first + 1) % 3
+assert b.aim["card"] is b.hand.slots[b.selected]
 b.cycle_card(-1)
 assert b.selected == first
 print("hand rotation ok")
@@ -124,6 +127,59 @@ assert b2.use_card(empty, ("slot", 0)), b2.toast_msg
 assert b2.hand.total() == 2, "empty pile must not draw"
 assert empty in b2.used
 print("empty pile no draw ok")
+
+# the middle card is already aimed: click a target without selecting the card first
+b2.hand.slots[1] = Card("TRUNC")
+b2.selected = 1
+b2.aim_selected()
+b2.work_used = 0.0
+target = next(n for n in b2.graph.hostiles()
+              if n.alive and not n.data.get("boss"))
+b2.on_mouse_down((target.x, target.y), 1)
+assert target.data.get("cast_stripped") or target.stun > 0
+print("default aim click ok")
+
+# self-target card: left click anywhere releases it
+b2.state = "playing"
+b2.work_used = 0.0
+b2.hand.slots[1] = Card("COMPRESS")
+b2.selected = 1
+b2.aim_selected()
+assert b2.on_mouse_down((10, 10), 1), b2.toast_msg
+assert b2.compress_t > 0
+print("self card click anywhere ok")
+
+# Shift now cycles to the previous card
+b2.hand.slots = [Card("CUT"), Card("LINK"), Card("WEAK")]
+b2.selected = 1
+b2.aim_selected()
+b2.on_key(pygame.K_LSHIFT)
+assert b2.selected == 0
+print("shift previous card ok")
+
+# non-connection card can be released without a target
+b2.state = "playing"
+b2.work_used = 0.0
+cut_empty = Card("CUT")
+b2.hand.slots[1] = cut_empty
+b2.selected = 1
+b2.aim_selected()
+before_cards = b2.stats["cards"]
+b2.on_mouse_down((10, 10), 1)
+b2.on_mouse_up((10, 10), 1)
+assert b2.stats["cards"] == before_cards + 1
+print("no-target release ok")
+
+# connection card still needs a real object
+b2.state = "playing"
+b2.work_used = 0.0
+link = Card("LINK")
+b2.hand.slots[1] = link
+b2.selected = 1
+b2.aim_selected()
+b2.on_mouse_down((10, 10), 1)
+assert b2.hand.slots[1] is link
+print("connection target required ok")
 
 print("MECHANICS OK")
 pygame.quit()

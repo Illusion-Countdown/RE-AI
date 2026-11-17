@@ -23,9 +23,6 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.t = 0.0
         self.last_quality = 100
         self.trail = []
-        self.zoom = 1.25
-        self.cam = [W / 2, H / 2]
-        self._cam_ready = False
 
     def _make_bg(self):
         """整张屏幕都是战场：没有左右栏，也没有顶栏底板。"""
@@ -51,42 +48,11 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
 
     # ------------------------------------------------------------ 相机
 
-    def reset_camera(self):
-        self._cam_ready = False
-
-    def zoom_by(self, steps):
-        self.zoom = clamp(self.zoom + steps * 0.08, 1.0, 2.0)
-
-    def update_camera(self, b, dt):
-        vw, vh = W / self.zoom, H / self.zoom
-        tx = clamp(b.player_node.x, vw / 2, W - vw / 2)
-        ty = clamp(b.player_node.y, vh / 2, H - vh / 2)
-        if not self._cam_ready:
-            self.cam = [tx, ty]
-            self._cam_ready = True
-            return
-        k = min(1.0, max(0.0, dt) * 7.0)
-        self.cam[0] += (tx - self.cam[0]) * k
-        self.cam[1] += (ty - self.cam[1]) * k
-
     def screen_to_world(self, pos):
-        vw, vh = W / self.zoom, H / self.zoom
-        sx, sy = self.cam[0] - vw / 2, self.cam[1] - vh / 2
-        return (sx + pos[0] / self.zoom, sy + pos[1] / self.zoom)
+        return pos
 
     def world_to_screen(self, pos):
-        vw, vh = W / self.zoom, H / self.zoom
-        sx, sy = self.cam[0] - vw / 2, self.cam[1] - vh / 2
-        return ((pos[0] - sx) * self.zoom, (pos[1] - sy) * self.zoom)
-
-    def _camera_view(self):
-        if self.zoom <= 1.001:
-            return self.world
-        vw, vh = W / self.zoom, H / self.zoom
-        sx = clamp(self.cam[0] - vw / 2, 0, max(0, W - vw))
-        sy = clamp(self.cam[1] - vh / 2, 0, max(0, H - vh))
-        src = pygame.Rect(int(sx), int(sy), max(1, int(vw)), max(1, int(vh)))
-        return pygame.transform.smoothscale(self.world.subsurface(src), (W, H))
+        return pos
 
     # ------------------------------------------------------------ 主绘制
 
@@ -97,8 +63,7 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         q = b.quality()
         self.last_quality = q
         b.screen_mouse = mouse
-        self.update_camera(b, dt)
-        b.mouse = self.screen_to_world(mouse)
+        b.mouse = mouse
         b.hover_node = b.node_at(*b.mouse)
         b.hover_edge = None if b.hover_node else b.edge_at(*b.mouse)
 
@@ -109,8 +74,8 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.draw_world(self.world, b, (ox, oy), b.mouse)
         self.world.set_clip(None)
 
-        # 先做视野缩放，再做画质降级；UI 永远最后画，保持清晰
-        surf = self._camera_view()
+        # 固定全战场视野，只做画质降级；UI 永远最后画，保持清晰
+        surf = self.world
         band = b.quality_band()
         if band >= 1:
             factor = {1: 0.58, 2: 0.30, 3: 0.11}[band]

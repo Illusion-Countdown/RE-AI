@@ -11,9 +11,6 @@ class InputMixin:
             self.nope("这个手牌槽是空的")
             return
         self.selected = i
-        if self.aim and self.aim.get("card") is card:
-            self.aim = None
-            return
         self.aim = {"card": card, "where": ("slot", i), "stage": 0, "src": None}
 
     def cycle_card(self, delta):
@@ -70,8 +67,7 @@ class InputMixin:
         if mode == "edge":
             e = self.edge_at(pos[0], pos[1])
             if e is None:
-                self.nope("松手处没有引用线")
-                return False
+                return self.release_without_target(card, where)
             return self.use_card(card, where, target=e)
         if mode == "node":
             n = self.node_at(pos[0], pos[1])
@@ -105,7 +101,7 @@ class InputMixin:
             return
         if pygame.K_1 <= key <= pygame.K_3:
             self.select_slot(key - pygame.K_1)
-        elif key == pygame.K_c:
+        elif key in (pygame.K_c, pygame.K_LSHIFT, pygame.K_RSHIFT):
             self.cycle_card(-1)
         elif key == pygame.K_SPACE:
             self.cycle_card(1)
@@ -170,10 +166,15 @@ class InputMixin:
         if self.state != "playing":
             return
         if button == 3:
-            if self.aim:
-                self.aim = None
+            # 右键仍可 WRITE；只有正在选第二个目标/划边时才用于取消
+            if self.aim and (self.aim.get("stage", 0) > 0 or self.edge_drag):
+                self.edge_drag = None
+                self.slash = []
+                self.aim_selected()
+                self.toast("已取消目标选择")
             else:
                 self.write_attack()
+                self.aim_selected()
             return
         if button != 1:
             return
@@ -181,6 +182,9 @@ class InputMixin:
             return
         card = self.aim["card"]
         mode = card.d["target"]
+        if mode in ("self", "dead"):
+            # 纠错码、压缩等不需要目标：左键点战场任意处直接释放
+            return self.use_card(card, self.aim["where"])
         if mode == "two":
             n = self.node_at(*pos)
             if n is None:
@@ -207,6 +211,8 @@ class InputMixin:
 
     def on_mouse_up(self, pos, button, mods=0):
         self.mouse = pos
+        if button != 1:
+            return
         if self.state != "playing" or not self.aim:
             self.edge_drag = None
             self.two_drag = None
@@ -223,7 +229,7 @@ class InputMixin:
             self.slash = []
             edges = self.edges_on_path(path)
             if not edges:
-                self.nope("划过的地方没有引用线")
+                self.release_without_target(card, self.aim["where"])
                 return
             self.use_card(card, self.aim["where"], target=edges)
         elif mode == "two" and self.aim["stage"] == 1 and self.two_drag:

@@ -39,7 +39,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.destroyed = []
         self.returned = 0           # 本房已随机放回牌堆的次数
         self.card_uses = {}         # uid -> 本房使用次数
-        self.selected = 0           # 当前选中手牌槽
+        self.selected = 1           # 默认选中中间手牌
         self.screen_mouse = (W // 2, H // 2)
         self.work_used = 0.0
         self.work_regen = self.run.body.get("regen", 1.7)
@@ -157,7 +157,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.discarded = []
         self.returned = 0
         self.card_uses = {}
-        self.selected = 0
+        self.selected = 1
         tut = self.room.get("tut")
         if tut:
             # 教程不靠抽牌运气：把这一课需要的卡直接塞进起手
@@ -176,6 +176,8 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         else:
             for _ in range(Hand.LIMIT):
                 self.draw_one(initial=True)
+        self.normalize_selection()
+        self.aim_selected()
         self.fx.add_text(self.player_node.x, self.player_node.y - 40,
                          "DECK ONLINE", CYAN, 18, 1.2)
 
@@ -195,7 +197,20 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
             if self.hand.slots[idx] is not None:
                 self.selected = idx
                 return
-        self.selected = 0
+        self.selected = 1
+
+    def aim_selected(self):
+        """中间牌始终保持选中并处于可瞄准状态。"""
+        card = self.hand.slots[self.selected]
+        if card is None:
+            self.normalize_selection()
+            card = self.hand.slots[self.selected]
+        if card is None:
+            self.aim = None
+            return None
+        self.aim = {"card": card, "where": ("slot", self.selected),
+                    "stage": 0, "src": None}
+        return card
 
     # ================================================================ 查询
 

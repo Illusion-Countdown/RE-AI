@@ -89,7 +89,6 @@ class App:
             return
         self.run.begin_room()
         self.battle = Battle(self.run, FX())
-        self.renderer.reset_camera()
         self.state = "battle"
         self._finished_handled = False
         self.result = None
@@ -400,9 +399,6 @@ class App:
         b = self.battle
         if b is None:
             return
-        if ev.type == pygame.MOUSEWHEEL:
-            self.renderer.zoom_by(ev.y)
-            return
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_ESCAPE:
                 self.state = "pause"
@@ -416,9 +412,6 @@ class App:
                 if abs(ev.pos[0] - sx) + abs(ev.pos[1] - sy) > 8:
                     self.card_press["moved"] = True
         elif ev.type == pygame.MOUSEBUTTONDOWN:
-            if ev.button in (4, 5):
-                self.renderer.zoom_by(1 if ev.button == 4 else -1)
-                return
             b.screen_mouse = ev.pos
             world = self.renderer.screen_to_world(ev.pos)
             # 按住手牌：先预览，松开时再决定是点击还是拖拽
@@ -433,7 +426,6 @@ class App:
                     return
             if ev.button == 3:
                 self.card_press = None
-                b.aim = None
                 b.drag_active = False
             b.on_mouse_down(world, ev.button, pygame.key.get_mods())
         elif ev.type == pygame.MOUSEBUTTONUP:
@@ -447,7 +439,7 @@ class App:
                     over_hand = any(r.collidepoint(ev.pos)
                                     for r, _w, _c in self.renderer.hand_rects)
                     if over_hand or BOTTOM.collidepoint(ev.pos):
-                        b.aim = None
+                        b.aim_selected()
                     else:
                         b.drop_card_at(world)
                 else:
@@ -550,7 +542,8 @@ class App:
         mvy = (1 if keys[pygame.K_s] or keys[pygame.K_DOWN] else 0) - \
               (1 if keys[pygame.K_w] or keys[pygame.K_UP] else 0)
         dash = keys[pygame.K_e]
-        plan = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+        # 按住鼠标中键减速；Shift 已改为切换上一张牌
+        plan = pygame.mouse.get_pressed()[1]
         return {"mvx": mvx, "mvy": mvy, "dash": dash,
                 "plan": plan, "mouse": pygame.mouse.get_pos()}
 

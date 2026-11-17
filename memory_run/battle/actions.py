@@ -48,7 +48,7 @@ class ActionsMixin:
         self.draw_one()
         self.recycle_after_use(card)
         self.normalize_selection()
-        self.aim = None
+        self.aim_selected()
         self.edge_drag = None
         self.stats["cards"] += 1
         self.run.stats["cards"] += 1
@@ -59,6 +59,26 @@ class ActionsMixin:
                              f"-{self.card_work(card)} WORK", AMBER, 11, 0.7)
         self.fx.add_ring(self.player_node.x, self.player_node.y,
                          6, 42, card.color, 0.3, 2)
+        audio.play("select")
+        return True
+
+    def release_without_target(self, card, where):
+        """单剪/横扫等非连接卡：没有有效目标时也允许释放并进入抽牌循环。"""
+        if self.state != "playing":
+            return False
+        if not self.spend_work(card):
+            return False
+        _kind, idx = where
+        self.hand.take_slot(idx)
+        self.draw_one()
+        self.recycle_after_use(card)
+        self.normalize_selection()
+        self.aim_selected()
+        self.edge_drag = None
+        self.stats["cards"] += 1
+        self.run.stats["cards"] += 1
+        self.fx.add_text(self.player_node.x, self.player_node.y - 34,
+                         f"{card.name} · 无目标释放", card.color, 12, 0.8)
         audio.play("select")
         return True
 

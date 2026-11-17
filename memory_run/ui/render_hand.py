@@ -26,19 +26,18 @@ class HandMixin:
                 draw_card(screen, rect, card.key, card.up,
                           selected=selected, hover=hover)
                 if selected:
-                    pygame.draw.rect(screen, GOLD, rect, 3, border_radius=7)
                     blit_text(screen, "SELECTED", (rect.centerx, rect.y - 14),
                               9, GOLD, mono=True, anchor="midtop", bold=True)
-                # 槽位编号贴在卡牌左上角，切换后仍能对应 1/2/3
-                bx, by = rect.x + 7, rect.y + 7
-                pygame.draw.circle(screen, (9, 13, 19), (bx, by), 13)
-                pygame.draw.circle(screen, card.color, (bx, by), 13, 1)
-                blit_text(screen, str(idx + 1), (bx, by), 10, WHITE,
+                # 槽位编号放在卡牌上方，避免压住圆角描边
+                bx, by = rect.x + 16, rect.y - 14
+                pygame.draw.circle(screen, (9, 13, 19), (bx, by), 11)
+                pygame.draw.circle(screen, card.color, (bx, by), 11, 1)
+                blit_text(screen, str(idx + 1), (bx, by), 9, WHITE,
                           mono=True, anchor="center", bold=True)
             self.hand_rects.append((rect, ("slot", idx), card))
 
         blit_text(screen, "1 2 3 选牌   ·   C 上一张   ·   SPACE 下一张",
-                  (cx, H - 150), 10, DIM, mono=True, anchor="midtop")
+                  (cx, H - 168), 10, DIM, mono=True, anchor="midtop")
         # FOCUS 与视野：放在右下角，不再占用顶部/左侧
         blit_text(screen, "FOCUS", (W - 238, H - 52), 9, DIM, mono=True)
         bar(screen, pygame.Rect(W - 238, H - 36, 174, 4),

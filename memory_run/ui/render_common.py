@@ -63,13 +63,9 @@ def draw_card(screen, rect, key, up=False, selected=False, hover=False,
     if up:
         fill = mix(fill, GOLD, 0.08)
     pygame.draw.rect(screen, fill, rect, border_radius=7)
-    border = GOLD if up else (col if (selected or hover) else dim(col, 0.65))
-    pygame.draw.rect(screen, border, rect, 2 if selected else 1, border_radius=7)
-    # 顶部 / 左侧色条：让卡牌类型在不看文字时也能分辨
-    pygame.draw.rect(screen, col, (rect.x + 2, rect.y + 2, rect.w - 4, 4),
-                     border_radius=2)
-    pygame.draw.rect(screen, col, (rect.x + 2, rect.y + 9, 3, rect.h - 18),
-                     border_radius=1)
+    border = GOLD if (up or selected) else (col if hover else dim(col, 0.65))
+    width = 3 if selected else (2 if up else 1)
+    pygame.draw.rect(screen, border, rect, width, border_radius=7)
     if selected:
         glow(screen, rect.centerx, rect.centery, rect.w * 0.75, col, 0.35)
     # 形状缩略图

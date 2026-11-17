@@ -112,6 +112,24 @@ CARDS = [
         "effect": "使目标减速 5 秒。",
         "up": "减速延长至 8 秒。",
     },
+    {
+        "key": "EDGE", "cn": "锐化", "en": "EDGE", "cat": "CUT", "rarity": 1,
+        "kind": "passive", "cells": [(0, 0), (0, 1), (1, 0)], "mb": 3, "work": 0, "target": "被动",
+        "effect": "滑剪命中判定宽度 +8，更容易一次划过多条引用。",
+        "up": "判定宽度额外 +4。",
+    },
+    {
+        "key": "RECLAIM", "cn": "回收协议", "en": "RECLAIM", "cat": "MEM", "rarity": 1,
+        "kind": "passive", "cells": [(0, 0), (0, 1), (1, 0), (1, 1)], "mb": 4, "work": 0, "target": "被动",
+        "effect": "每次触发 GC 时恢复 6 点保真度。",
+        "up": "每次 GC 恢复 10 点保真度。",
+    },
+    {
+        "key": "OVERCLOCK", "cn": "超频", "en": "OVERCLOCK", "cat": "TYPE", "rarity": 2,
+        "kind": "passive", "cells": [(0, 0), (0, 1), (0, 2), (1, 1)], "mb": 5, "work": 0, "target": "被动",
+        "effect": "我方造成的伤害 +12%。",
+        "up": "我方造成的伤害 +18%。",
+    },
 ]
 
 BY_KEY = {c["key"]: c for c in CARDS}

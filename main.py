@@ -42,14 +42,15 @@ TABS = [("ALL", "全部", None), ("CUT", "断链", "CUT"), ("REF", "引用", "RE
 
 # 首战推荐：8 张主动技能，无重叠，占用 37/64，首战 Fidelity Cap ≈ 71
 RECOMMENDED_DECK = [
-    ("CUT", 3, 6, 0),
-    ("CLIP", 3, 3, 0),
-    ("SWEEP", 5, 0, 0),
-    ("WEAK", 0, 4, 0),
-    ("TRUNC", 3, 0, 0),
-    ("ECC", 0, 3, 0),
-    ("DOWN", 0, 6, 0),
-    ("LOSSY", 0, 0, 0),
+    ("CUT", 2, 6, 0),
+    ("CLIP", 2, 3, 0),
+    ("SWEEP", 4, 2, 0),
+    ("WEAK", 0, 1, 0),
+    ("TRUNC", 0, 3, 0),
+    ("ECC", 0, 0, 0),
+    ("EDGE", 4, 5, 0),
+    ("RECLAIM", 0, 6, 0),
+    ("OVERCLOCK", 3, 0, 0),
 ]
 
 
@@ -206,7 +207,8 @@ class App:
     def battle_loadout(self):
         return {
             "cards": [
-                {"uid": p.uid, "key": p.key, "cells": p.cells(), "damaged": p.damaged}
+                {"uid": p.uid, "key": p.key, "cells": p.cells(), "damaged": p.damaged,
+                 "kind": BY_KEY[p.key].get("kind", "active")}
                 for p in sorted(self.placed.values(), key=lambda q: q.uid)
             ],
             "necro": [list(c) for c in sorted(self.necro)],
@@ -232,7 +234,7 @@ class App:
             p = self.add_placed(key, row, col, rot)
             if p:
                 self.counts[key] = max(0, self.counts.get(key, 0) - 1)
-        self.message = "已换上推荐牌组 · 8 张 · 保真上限 " + str(self.quality())
+        self.message = f"已换上推荐牌组 · {len(RECOMMENDED_DECK)} 张 · 保真上限 {self.quality()}"
         self.message_t = 3.0
         self.audio.play("place")
 
@@ -804,7 +806,8 @@ class App:
         self.text(s, f"稀有度 {RARITY[card['rarity']]}", (r.x + 16, r.y + 176), RARITY_COLORS[card["rarity"]], self.font11)
         self.text(s, f"目标：{card['target']}", (r.x + 150, r.y + 176), MUTED, self.font11)
         pygame.draw.line(s, (43, 58, 72), (r.x + 14, r.y + 196), (r.right - 14, r.y + 196), 1)
-        self.text(s, "主动技能效果", (r.x + 16, r.y + 208), cat["color"], self.font12)
+        effect_label = "被动效果" if card.get("kind") == "passive" else "主动技能效果"
+        self.text(s, effect_label, (r.x + 16, r.y + 208), cat["color"], self.font12)
         yy = r.y + 228
         for line in self.wrap(card["effect"], self.font12, r.w - 32)[:5]:
             self.text(s, line, (r.x + 16, yy), TEXT, self.font12)

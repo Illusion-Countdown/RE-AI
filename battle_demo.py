@@ -625,6 +625,9 @@ CARD_INFO = {
     "ECC": {"cn": "纠错补块", "en": "ECC", "color": (114, 230, 160), "desc": "修复 30 保真度"},
     "LOSSY": {"cn": "有损爆发", "en": "LOSSY", "color": (255, 160, 80), "desc": "全体70 / 保真-10"},
     "DOWN": {"cn": "降采样", "en": "DOWN", "color": (114, 230, 160), "desc": "减速 5s"},
+    "EDGE": {"cn": "锐化", "en": "EDGE", "color": (80, 214, 255), "desc": "滑剪判定 +8", "passive": True},
+    "RECLAIM": {"cn": "回收协议", "en": "RECLAIM", "color": (114, 230, 160), "desc": "GC 回复 6 保真", "passive": True},
+    "OVERCLOCK": {"cn": "超频", "en": "OVERCLOCK", "color": (255, 200, 87), "desc": "我方伤害 +12%", "passive": True},
 }
 CARD_POOL = list(CARD_INFO.keys())
 SLASH_CARDS = {"CUT", "CLIP", "SWEEP", "WEAK", "TRUNC", "DOWN"}
@@ -1160,6 +1163,10 @@ class Battle:
         self.shake(0.12, 2)
         self.audio.play("invalid")
 
+    def passive_active(self, key):
+        return any(c.kind == "passive" and c.key == key and not c.damaged
+                   for c in self.memory_cards)
+
     def fidelity_color(self):
         if self.fidelity >= 75:
             return (80, 230, 160)
@@ -1171,12 +1178,16 @@ class Battle:
 
     def fidelity_damage_mult(self):
         if self.fidelity >= 75:
-            return 1.00
-        if self.fidelity >= 50:
-            return 1.15
-        if self.fidelity >= 25:
-            return 1.30
-        return 1.50
+            base = 1.00
+        elif self.fidelity >= 50:
+            base = 1.15
+        elif self.fidelity >= 25:
+            base = 1.30
+        else:
+            base = 1.50
+        if self.passive_active("OVERCLOCK"):
+            base *= 1.12
+        return base
 
     def fidelity_resolution_factor(self):
         if self.fidelity >= 75:
@@ -1335,6 +1346,11 @@ class Battle:
                                  "color": link.color, "t": 0.0, "life": 0.65, "vy": -20})
         if link.kind in ("strong", "cycle") and target.kind != "GC_CORE" and target.alive and target.refcount == 0:
             target.die(self, "gc")
+            if self.passive_active("RECLAIM"):
+                self.change_fidelity(6, "reclaim")
+                self.numbers.append({"x": target.x, "y": target.y - target.r - 52,
+                                     "text": "RECLAIM +6", "color": (114, 230, 160),
+                                     "t": 0.0, "life": 0.8, "vy": -20})
 
     def spawn_enemy(self, kind, x, y):
         e = Enemy(kind, x, y)
@@ -1694,18 +1710,19 @@ class Battle:
 
     def slash_hits(self, start, end):
         hits = []
+        tol = 8.0 + (8.0 if self.passive_active("EDGE") else 0.0)
         for link in self.links:
             if not link.alive:
                 continue
             pts = self.link_points(link)
             hit = False
             for p, q in zip(pts, pts[1:]):
-                if self._segments_cross(start, end, p, q) or self._seg_dist(start, p, q, p) < 8 or self._seg_dist(end, p, q, p) < 8:
+                if self._segments_cross(start, end, p, q) or self._seg_dist(start, p, q, p) < tol or self._seg_dist(end, p, q, p) < tol:
                     hit = True
                     break
             if not hit:
                 for p in pts:
-                    if self._seg_dist(p, p, start, end) < 8:
+                    if self._seg_dist(p, p, start, end) < tol:
                         hit = True
                         break
             if hit:
@@ -2259,14 +2276,18 @@ class Battle:
         n = max(1, len(siblings))
         vx, vy = tx - sx, ty - sy
         length = math.hypot(vx, vy) or 1
-        nx, ny = -vy / length, vx / length
-        bend = (idx - (n - 1) / 2.0) * 11.0
-        cx, cy = (sx + tx) / 2 + nx * bend, (sy + ty) / 2 + ny * bend
+        ux, uy = vx / length, vy / length
+        nx, ny = -uy, ux
+        bend = (idx - (n - 1) / 2.0) * 14.0
+        # Cubic bezier: control points are pulled along the tangent and
+        # offset perpendicular, so even a single edge reads as a curve.
+        c1x, c1y = sx + vx * 0.24 + nx * bend, sy + vy * 0.24 + ny * bend
+        c2x, c2y = tx - vx * 0.24 + nx * bend * 1.25, ty - vy * 0.24 + ny * bend * 1.25
         pts = []
-        for i in range(19):
-            k = i / 18.0
-            x = (1 - k) * (1 - k) * sx + 2 * (1 - k) * k * cx + k * k * tx
-            y = (1 - k) * (1 - k) * sy + 2 * (1 - k) * k * cy + k * k * ty
+        for i in range(25):
+            k = i / 24.0
+            x = ((1 - k) ** 3) * sx + 3 * ((1 - k) ** 2) * k * c1x + 3 * (1 - k) * (k ** 2) * c2x + (k ** 3) * tx
+            y = ((1 - k) ** 3) * sy + 3 * ((1 - k) ** 2) * k * c1y + 3 * (1 - k) * (k ** 2) * c2y + (k ** 3) * ty
             pts.append((x, y))
         return pts
 
@@ -2278,17 +2299,40 @@ class Battle:
             if not link.alive:
                 continue
             pts = self.link_points(link)
-            col = (255, 245, 170) if id(link) in hot else link.color
-            width = 4 if id(link) in hot else 2
-            pygame.draw.lines(s, (5, 10, 15), False, [(int(x), int(y)) for x, y in pts], width + 2)
-            pygame.draw.lines(s, col, False, [(int(x), int(y)) for x, y in pts], width)
+            is_hot = id(link) in hot
+            col = (255, 245, 170) if is_hot else link.color
+            # soft dark halo, colored body, bright center
+            pygame.draw.lines(s, (4, 9, 14), False,
+                              [(int(x), int(y)) for x, y in pts], 7 if is_hot else 5)
+            pygame.draw.lines(s, (int(col[0] * 0.42), int(col[1] * 0.42), int(col[2] * 0.42)),
+                              False, [(int(x), int(y)) for x, y in pts], 4 if is_hot else 3)
+            if link.kind == "support":
+                # gold link: broken dashes make support distinct from STRONG
+                for i in range(0, len(pts) - 3, 4):
+                    seg = [(int(x), int(y)) for x, y in pts[i:i + 3]]
+                    pygame.draw.lines(s, col, False, seg, 3 if is_hot else 2)
+            else:
+                pygame.draw.lines(s, col, False,
+                                  [(int(x), int(y)) for x, y in pts], 3 if is_hot else 2)
+                pygame.draw.lines(s, (min(255, col[0] + 55), min(255, col[1] + 55), min(255, col[2] + 55)),
+                                  False, [(int(x), int(y)) for x, y in pts[2:-2]], 1)
+            # moving data packets along the reference
+            for k in range(2):
+                phase = (self.time * 0.34 + k * 0.5 + (abs(hash(id(link))) % 97) / 97.0) % 1.0
+                pi = min(len(pts) - 2, int(phase * (len(pts) - 1)))
+                px, py = pts[pi]
+                pygame.draw.circle(s, (235, 250, 255) if not is_hot else (255, 245, 170),
+                                   (int(px), int(py)), 2 if not is_hot else 3)
+            # arrow head at the target
             ex, ey = pts[-1]
             px, py = pts[-3]
             ang = math.atan2(ey - py, ex - px)
             for da in (-0.55, 0.55):
-                ax = ex - math.cos(ang + da) * 9
-                ay = ey - math.sin(ang + da) * 9
-                pygame.draw.line(s, col, (ex, ey), (ax, ay), width)
+                ax = ex - math.cos(ang + da) * 10
+                ay = ey - math.sin(ang + da) * 10
+                pygame.draw.line(s, col, (ex, ey), (ax, ay), 2)
+            pygame.draw.circle(s, (8, 14, 20), (int(ex), int(ey)), 4)
+            pygame.draw.circle(s, col, (int(ex), int(ey)), 3, 1)
 
     def draw_arena(self, s):
         w, h = ARENA.size
@@ -2478,7 +2522,7 @@ class Battle:
                 s.blit(ov, row.topleft)
             name = card.info["cn"] + (" BROKEN" if red else "")
             self.text(s, name, (row.x + 8, row.y + 4), (255, 210, 215) if red else TEXT, self.font11)
-            self.text(s, card.info["en"][:5], (row.right - 88, row.y + 5),
+            self.text(s, card.info["en"][:9], (row.right - 88, row.y + 5),
                       (255, 145, 155) if red else card.info["color"], self.mono10)
             if card.cd > 0 and not card.damaged:
                 self.text(s, f"{card.cd:.1f}", (row.right - 22, row.y + 5), (245, 248, 255),

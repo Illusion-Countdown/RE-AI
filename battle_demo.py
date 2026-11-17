@@ -627,6 +627,7 @@ CARD_INFO = {
     "DOWN": {"cn": "降采样", "en": "DOWN", "color": (114, 230, 160), "desc": "减速 5s"},
 }
 CARD_POOL = list(CARD_INFO.keys())
+SLASH_CARDS = {"CUT", "CLIP", "SWEEP", "WEAK", "TRUNC", "DOWN"}
 
 MEMORY_CD = {
     "CUT": 3.5, "CLIP": 8.0, "SWEEP": 10.0, "WEAK": 6.0,
@@ -688,6 +689,24 @@ ENEMY_DEFS = {    "MINION": {"cn": "游标", "hp": 150, "dmg": 36, "period": 2.2
 }
 
 
+class RefLink:
+    COLORS = {
+        "strong": (80, 214, 255),
+        "cycle": (190, 140, 255),
+        "support": (255, 205, 100),
+    }
+
+    def __init__(self, source, target, kind="strong"):
+        self.source = source
+        self.target = target
+        self.kind = kind
+        self.alive = True
+
+    @property
+    def color(self):
+        return self.COLORS.get(self.kind, (150, 180, 200))
+
+
 class Enemy:
     def __init__(self, kind, x, y):
         self.kind = kind
@@ -699,13 +718,7 @@ class Enemy:
         self.r = self.d["r"]
         self.color = self.d["color"]
         self.dead = False
-        self.refs = ["ROOT"] * {
-            "MINION": 1, "SENTINEL": 3, "WARD": 2,
-            "BOMB": 1, "CYCLER": 1, "QUANTIZER": 3,
-            "ALLOCATOR": 2, "PYLON": 1, "GC_CORE": 0,
-        }.get(kind, 1)
-        if kind == "CYCLER":
-            self.refs.append("CYCLE")
+        self.refs = []
         self.attack_cd = random.uniform(0.8, 2.0)
         self.special_cd = 1.0
         self.quant_tick = random.uniform(1.4, 2.2)
@@ -730,7 +743,7 @@ class Enemy:
 
     @property
     def refcount(self):
-        return len(self.refs)
+        return sum(1 for l in self.refs if l.alive and l.kind in ("strong", "cycle"))
 
     def nearest_char(self, battle):
         alive = [c for c in battle.chars if c.alive and not c.removed]
@@ -757,8 +770,10 @@ class Enemy:
         if self.dead:
             return
         if self.kind == "GC_CORE":
-            pylons = [e for e in battle.enemies if e.alive and e.kind == "PYLON"]
-            if pylons:
+            shields = [l for l in battle.links
+                       if l.alive and l.target is self and l.kind == "support"
+                       and isinstance(l.source, Enemy) and l.source.kind == "PYLON"]
+            if shields:
                 battle.numbers.append({"x": self.x, "y": self.y - self.r - 20,
                                        "text": "IMMUNE", "color": (255, 220, 120),
                                        "t": 0.0, "life": 0.6, "vy": -18})
@@ -790,17 +805,9 @@ class Enemy:
             battle.numbers.append({"x": self.x, "y": self.y - self.r - 30, "text": "NO REF / IMMUNE",
                                    "color": (255, 220, 120), "t": 0.0, "life": 0.7, "vy": -20})
             return
-        cut = 0
-        for _ in range(count):
-            if self.refs:
-                self.refs.pop(0)
-                cut += 1
-        if cut:
-            battle.numbers.append({"x": self.x, "y": self.y - self.r - 34, "text": f"CUT -{cut} REF",
-                                   "color": CYAN, "t": 0.0, "life": 0.7, "vy": -24})
-            battle.spawn_particles(self.x, self.y, CYAN, 10)
-        if not self.refs and not self.dead:
-            self.die(battle, "gc")
+        links = [l for l in self.refs if l.alive and l.kind in ("strong", "cycle")]
+        for link in links[:count]:
+            battle.cut_link(link)
 
     def die(self, battle, cause="hp"):
         if self.dead:
@@ -826,9 +833,9 @@ class Enemy:
                 battle.spawn_particles(self.x, self.y, (255, 90, 70), 28, 180)
                 battle.rings.append({"x": self.x, "y": self.y, "r": 10, "max": 150,
                                      "t": 0.0, "life": 0.5, "color": (255, 110, 80)})
-        if self.pair and self.pair.alive:
-            if "CYCLE" in self.pair.refs:
-                self.pair.refs.remove("CYCLE")
+        for link in battle.links:
+            if link.alive and (link.source is self or link.target is self):
+                link.alive = False
         battle.on_enemy_death()
 
     def update(self, dt, battle):
@@ -850,8 +857,10 @@ class Enemy:
         slow = 0.55 if self.slow_t > 0 else 1.0
 
         if self.kind == "GC_CORE":
-            pylons = [e for e in battle.enemies if e.alive and e.kind == "PYLON"]
-            if pylons:
+            shields = [l for l in battle.links
+                       if l.alive and l.target is self and l.kind == "support"
+                       and isinstance(l.source, Enemy) and l.source.kind == "PYLON"]
+            if shields:
                 return
             self.special_cd -= dt
             if self.special_cd <= 0:
@@ -889,9 +898,10 @@ class Enemy:
             self.special_cd -= dt
             if self.special_cd <= 0:
                 self.special_cd = 4.0
-                allies = [e for e in battle.enemies if e.alive and e is not self]
-                if allies:
-                    t = min(allies, key=lambda e: e.hp / e.max_hp)
+                linked = [l.target for l in battle.links
+                          if l.alive and l.source is self and l.kind == "support" and l.target.alive]
+                if linked:
+                    t = min(linked, key=lambda e: e.hp / e.max_hp)
                     t.shield = max(t.shield, 90)
                     t.shield_t = max(t.shield_t, 4.0)
                     battle.rings.append({"x": t.x, "y": t.y, "r": 6, "max": 32,
@@ -903,10 +913,14 @@ class Enemy:
                 self.cycle_t -= dt
                 if self.cycle_t <= 0:
                     self.cycle_t = 1.6
-                    if "CYCLE" not in self.refs:
-                        self.refs.append("CYCLE")
-                    if "CYCLE" not in self.pair.refs:
-                        self.pair.refs.append("CYCLE")
+                    has_cycle = any(l.alive and l.kind == "cycle" and l.target is self
+                                    for l in self.refs)
+                    if not has_cycle:
+                        battle.add_link(self.pair, self, "cycle")
+                    has_back = any(l.alive and l.kind == "cycle" and l.target is self.pair
+                                   for l in self.pair.refs)
+                    if not has_back:
+                        battle.add_link(self, self.pair, "cycle")
                     battle.spawn_particles((self.x + self.pair.x) / 2, (self.y + self.pair.y) / 2,
                                            PURPLE, 5)
 
@@ -953,8 +967,6 @@ class Enemy:
             a = t * 2.0
             pygame.draw.circle(s, col, (int(x + math.cos(a) * (r - 5)),
                                         int(y + math.sin(a) * (r - 5))), 4)
-            if self.pair and self.pair.alive:
-                pygame.draw.line(s, (150, 110, 220), (x, y), (self.pair.x, self.pair.y), 1)
         elif self.kind == "ALLOCATOR":
             pygame.draw.rect(s, (14, 35, 34), (x - r, y - r, r * 2, r * 2))
             pygame.draw.rect(s, col, (x - r, y - r, r * 2, r * 2), 2)
@@ -982,8 +994,6 @@ class Enemy:
         pygame.draw.rect(s, self.color, (br.x, br.y, int(br.w * max(0, self.hp) / self.max_hp), br.h))
         if self.shield > 0:
             pygame.draw.circle(s, (100, 190, 255), (x, y), r + 5, 1)
-        for i in range(self.refcount):
-            pygame.draw.rect(s, CYAN, (x - 12 + i * 8, y + r + 4, 5, 3))
 
 
 def draw_root(s, root):
@@ -1097,6 +1107,7 @@ class Battle:
         self.recompute_fidelity_cap()
         self.fidelity = self.fidelity_cap
         self.hand = [None] * 5
+        self.links = []
         self.fill_hand()
         self.list_scroll = 0.0
         self.list_scroll_max = 0.0
@@ -1122,6 +1133,9 @@ class Battle:
         self.selected_key = "ds"
         self.targeting = None
         self.card_target = None
+        self.slash_armed = None
+        self.slash = None
+        self.slash_links = []
         self.cutin = None
         self.spawn_wave(1)
         self.audio.play("open")
@@ -1298,25 +1312,60 @@ class Battle:
                              "color": (255, 70, 90), "t": 0.0, "life": 1.0, "vy": -20})
         self.flash(0.08, RED, 0.2)
 
+    def add_link(self, source, target, kind="strong"):
+        link = RefLink(source, target, kind)
+        target.refs.append(link)
+        self.links.append(link)
+        return link
+
+    def cut_link(self, link, impact=True):
+        if not link.alive:
+            return
+        link.alive = False
+        target = link.target
+        if link.kind == "support":
+            target.shield = 0.0
+            target.shield_t = 0.0
+        if impact:
+            sx = self.root[0] if link.source == "ROOT" else link.source.x
+            sy = self.root[1] if link.source == "ROOT" else link.source.y
+            mx, my = (sx + target.x) / 2, (sy + target.y) / 2
+            self.spawn_particles(mx, my, link.color, 10, 100)
+            self.numbers.append({"x": mx, "y": my, "text": "CUT",
+                                 "color": link.color, "t": 0.0, "life": 0.65, "vy": -20})
+        if link.kind in ("strong", "cycle") and target.kind != "GC_CORE" and target.alive and target.refcount == 0:
+            target.die(self, "gc")
+
     def spawn_enemy(self, kind, x, y):
         e = Enemy(kind, x, y)
         self.enemies.append(e)
+        if kind != "GC_CORE":
+            self.add_link("ROOT", e, "strong")
         return e
 
     def spawn_wave(self, wave):
         self.wave = wave
         self.enemies = []
+        self.links = []
         self.balls = []
         self.projectiles = []
         self.delayed_cuts = []
         self.wave_banner = 1.6
         self.fidelity_threats = []
         self.fidelity_alert_t = 0.0
+        root_counts = {
+            "MINION": 1, "SENTINEL": 3, "WARD": 2,
+            "BOMB": 1, "CYCLER": 1, "QUANTIZER": 3,
+            "ALLOCATOR": 2, "PYLON": 1, "GC_CORE": 0,
+        }
         if wave == 1:
             self.spawn_enemy("SENTINEL", 600, 150)
             self.spawn_enemy("WARD", 690, 110)
             self.spawn_enemy("MINION", 680, 405)
             self.spawn_enemy("BOMB", 600, 400)
+            sentinel, ward, _minion, bomb = self.enemies
+            self.add_link(ward, sentinel, "support")
+            self.add_link(ward, bomb, "support")
         elif wave == 2:
             self.spawn_enemy("CYCLER", 470, 250)
             self.spawn_enemy("CYCLER", 555, 315)
@@ -1325,11 +1374,21 @@ class Battle:
             self.spawn_enemy("QUANTIZER", 700, 225)
             self.spawn_enemy("ALLOCATOR", 700, 125)
             self.spawn_enemy("MINION", 650, 405)
+            cyc_a, cyc_b, _quant, alloc, minion = self.enemies
+            self.add_link(cyc_a, cyc_b, "cycle")
+            self.add_link(cyc_b, cyc_a, "cycle")
+            self.add_link(alloc, minion, "support")
         else:
             self.spawn_enemy("GC_CORE", 650, 205)
             self.spawn_enemy("PYLON", 520, 120)
             self.spawn_enemy("PYLON", 650, 95)
             self.spawn_enemy("PYLON", 780, 120)
+            core, p1, p2, p3 = self.enemies
+            for pylon in (p1, p2, p3):
+                self.add_link(pylon, core, "support")
+        for e in self.enemies:
+            for _ in range(max(0, root_counts.get(e.kind, 1) - 1)):
+                self.add_link("ROOT", e, "strong")
         self.ds.x, self.ds.y = 330, 390
         self.claude.x, self.claude.y = 250, 420
         for e in self.enemies:
@@ -1343,6 +1402,7 @@ class Battle:
             return
         self.targeting = None
         self.card_target = None
+        self.cancel_slash()
         if self.wave < self.wave_max:
             self.state = "between"
             self.wave_t = 1.6
@@ -1613,6 +1673,139 @@ class Battle:
             self.card_target = None
             c.start_ult(self)
 
+    @staticmethod
+    def _seg_dist(p, q, a, b):
+        px, py = p
+        ax, ay = a
+        bx, by = b
+        dx, dy = bx - ax, by - ay
+        l2 = dx * dx + dy * dy or 1
+        t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / l2))
+        cx, cy = ax + t * dx, ay + t * dy
+        return math.hypot(px - cx, py - cy)
+
+    @staticmethod
+    def _segments_cross(a, b, c, d):
+        def cross(p, q, r):
+            return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+        d1, d2 = cross(c, d, a), cross(c, d, b)
+        d3, d4 = cross(a, b, c), cross(a, b, d)
+        return ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0))
+
+    def slash_hits(self, start, end):
+        hits = []
+        for link in self.links:
+            if not link.alive:
+                continue
+            pts = self.link_points(link)
+            hit = False
+            for p, q in zip(pts, pts[1:]):
+                if self._segments_cross(start, end, p, q) or self._seg_dist(start, p, q, p) < 8 or self._seg_dist(end, p, q, p) < 8:
+                    hit = True
+                    break
+            if not hit:
+                for p in pts:
+                    if self._seg_dist(p, p, start, end) < 8:
+                        hit = True
+                        break
+            if hit:
+                hits.append(link)
+        return hits
+
+    def start_slash(self, pos):
+        if self.slash_armed is None or not ARENA.collidepoint(pos):
+            return
+        wx, wy = pos[0] - ARENA.x, pos[1] - ARENA.y
+        self.slash = {"card": self.slash_armed, "start": (wx, wy), "pos": (wx, wy), "links": []}
+        self.slash_armed = None
+        self.targeting = None
+        self.card_target = None
+        self.audio.play("tab")
+
+    def update_slash(self, pos):
+        if not self.slash:
+            return
+        wx = max(0, min(ARENA.w, pos[0] - ARENA.x))
+        wy = max(0, min(ARENA.h, pos[1] - ARENA.y))
+        self.slash["pos"] = (wx, wy)
+        self.slash["links"] = self.slash_hits(self.slash["start"], (wx, wy))
+
+    def cancel_slash(self):
+        self.slash = None
+        self.slash_armed = None
+        self.slash_links = []
+
+    def end_slash(self, pos):
+        if not self.slash:
+            return
+        self.update_slash(pos)
+        start = self.slash["start"]
+        end = self.slash["pos"]
+        idx = self.slash["card"]
+        links = list(self.slash["links"])
+        if math.hypot(end[0] - start[0], end[1] - start[1]) < 18 or not links:
+            self.cancel_slash()
+            self.audio.play("invalid")
+            return
+        card = self.hand[idx] if 0 <= idx < len(self.hand) else None
+        if card is None:
+            self.cancel_slash()
+            return
+        key = card.key
+        if key == "WEAK":
+            targets = {l.target for l in links}
+            for t in targets:
+                t.weak_t = 6.0
+                self.numbers.append({"x": t.x, "y": t.y - t.r - 34, "text": "WEAK",
+                                     "color": PURPLE, "t": 0.0, "life": 0.7, "vy": -20})
+            cut_links = []
+            valid_effect = bool(targets)
+        elif key == "TRUNC":
+            targets = {l.target for l in links}
+            for t in targets:
+                t.take_damage(80 * self.fidelity_damage_mult(), self, AMBER)
+                t.stun_t = max(t.stun_t, 1.0)
+                t.no_destructor = True
+            cut_links = []
+            valid_effect = bool(targets)
+        elif key == "DOWN":
+            targets = {l.target for l in links}
+            for t in targets:
+                t.slow_t = 5.0
+                self.numbers.append({"x": t.x, "y": t.y - t.r - 34, "text": "SLOW",
+                                     "color": GREEN, "t": 0.0, "life": 0.7, "vy": -20})
+            cut_links = []
+            valid_effect = bool(targets)
+        elif key == "CLIP":
+            cut_links = links
+            valid_effect = True
+        else:
+            strong = [l for l in links if l.kind in ("strong", "cycle")]
+            if key == "CUT":
+                cut_links = strong[:1]
+            elif key == "SWEEP":
+                by_target = {}
+                for l in strong:
+                    by_target.setdefault(id(l.target), l)
+                cut_links = list(by_target.values())
+            else:
+                cut_links = strong
+            valid_effect = bool(cut_links)
+        if cut_links:
+            for link in cut_links:
+                self.cut_link(link)
+        elif not valid_effect:
+            self.cancel_slash()
+            self.audio.play("invalid")
+            return
+        self.hand[idx] = None
+        card.cd = card.cdmax
+        self.flash(0.05, CYAN, 0.2)
+        self.shake(0.15, 2)
+        self.slash = None
+        self.slash_links = []
+        self.audio.play("repair")
+
     def begin_card(self, index):
         if index < 0 or index >= len(self.hand) or self.hand[index] is None:
             return
@@ -1621,7 +1814,13 @@ class Battle:
             return
         key = card.key
         self.targeting = None
-        if key in ("ECC", "LOSSY", "SWEEP"):
+        self.card_target = None
+        self.slash_armed = None
+        if key in SLASH_CARDS:
+            self.slash_armed = index
+            self.audio.play("pick")
+            return
+        if key in ("ECC", "LOSSY"):
             self.use_card(index, None)
             return
         self.card_target = index
@@ -1734,7 +1933,7 @@ class Battle:
             return
         if self.targeting and self.targeting["char"].dead:
             self.targeting = None
-        slow = 0.22 if (self.targeting or self.card_target is not None) else 1.0
+        slow = 0.22 if (self.targeting or self.card_target is not None or self.slash is not None) else 1.0
         step = dt * self.speed * slow
         self.time += step
         self.update_memory_cd(step)
@@ -2045,6 +2244,52 @@ class Battle:
                           GREEN if ready else (105, 80, 80), self.mono10)
             self.party_hits.append((i, r))
 
+    def link_points(self, link):
+        if link.source == "ROOT":
+            sx, sy = self.root[0], self.root[1] + 16
+        else:
+            sx, sy = link.source.x, link.source.y - link.source.r
+        tx, ty = link.target.x, link.target.y - link.target.r
+        siblings = [l for l in self.links
+                    if l.alive and l.source is link.source and l.target is link.target]
+        try:
+            idx = siblings.index(link)
+        except ValueError:
+            idx = 0
+        n = max(1, len(siblings))
+        vx, vy = tx - sx, ty - sy
+        length = math.hypot(vx, vy) or 1
+        nx, ny = -vy / length, vx / length
+        bend = (idx - (n - 1) / 2.0) * 11.0
+        cx, cy = (sx + tx) / 2 + nx * bend, (sy + ty) / 2 + ny * bend
+        pts = []
+        for i in range(19):
+            k = i / 18.0
+            x = (1 - k) * (1 - k) * sx + 2 * (1 - k) * k * cx + k * k * tx
+            y = (1 - k) * (1 - k) * sy + 2 * (1 - k) * k * cy + k * k * ty
+            pts.append((x, y))
+        return pts
+
+    def draw_links(self, s):
+        hot = set()
+        if getattr(self, "slash", None):
+            hot = {id(l) for l in self.slash.get("links", [])}
+        for link in self.links:
+            if not link.alive:
+                continue
+            pts = self.link_points(link)
+            col = (255, 245, 170) if id(link) in hot else link.color
+            width = 4 if id(link) in hot else 2
+            pygame.draw.lines(s, (5, 10, 15), False, [(int(x), int(y)) for x, y in pts], width + 2)
+            pygame.draw.lines(s, col, False, [(int(x), int(y)) for x, y in pts], width)
+            ex, ey = pts[-1]
+            px, py = pts[-3]
+            ang = math.atan2(ey - py, ex - px)
+            for da in (-0.55, 0.55):
+                ax = ex - math.cos(ang + da) * 9
+                ay = ey - math.sin(ang + da) * 9
+                pygame.draw.line(s, col, (ex, ey), (ax, ay), width)
+
     def draw_arena(self, s):
         w, h = ARENA.size
         self.world.fill((10, 15, 23))
@@ -2057,18 +2302,13 @@ class Battle:
         # arena glyph
         pygame.draw.circle(self.world, (25, 39, 53), (w // 2, h // 2), 190, 1)
         pygame.draw.circle(self.world, (24, 37, 50), (w // 2, h // 2), 130, 1)
-        # root and reference edges
+        # all reference edges, one curve per edge
+        self.draw_links(self.world)
         draw_root(self.world, self.root)
         for e in self.enemies:
             if not e.alive:
                 continue
-            root_refs = e.refs.count("ROOT")
-            for k in range(root_refs):
-                off = (k - (root_refs - 1) / 2) * 6
-                pygame.draw.line(self.world, (50, 160, 190),
-                                 (self.root[0] + off, self.root[1] + 14),
-                                 (int(e.x), int(e.y - e.r)), 1)
-            self.text(self.world, f"{e.name} · REF{e.refcount}", (int(e.x), int(e.y - e.r - 30)),
+            self.text(self.world, e.name, (int(e.x), int(e.y - e.r - 30)),
                       e.color, self.font11, center=True)
             e.draw(self.world, self.time)
         # fidelity-threat spotlight
@@ -2101,6 +2341,15 @@ class Battle:
             if c.share_t > 0 and c is self.ds and self.claude.alive:
                 pygame.draw.line(self.world, (170, 240, 255), (self.ds.x, self.ds.y - 55),
                                  (self.claude.x, self.claude.y - 55), 2)
+        if self.slash:
+            sx, sy = self.slash["start"]
+            ex, ey = self.slash["pos"]
+            hot = bool(self.slash.get("links"))
+            col = (255, 240, 150) if hot else (130, 190, 210)
+            pygame.draw.line(self.world, (20, 30, 38), (sx, sy), (ex, ey), 7)
+            pygame.draw.line(self.world, col, (sx, sy), (ex, ey), 3)
+            pygame.draw.circle(self.world, col, (int(sx), int(sy)), 4, 1)
+            pygame.draw.circle(self.world, col, (int(ex), int(ey)), 5, 1)
         # low-fidelity rendering: degrade the battlefield before target UI
         factor = self.fidelity_resolution_factor()
         if factor < 1.0:
@@ -2364,7 +2613,19 @@ class Battle:
                       self.mono10 if not targeting_this else self.font11)
             self.command_hits.append((kind, br))
         # hand
-        if self.card_target is not None and 0 <= self.card_target < len(self.hand) and self.hand[self.card_target]:
+        slash_idx = self.slash["card"] if self.slash else self.slash_armed
+        if slash_idx is not None and 0 <= slash_idx < len(self.hand) and self.hand[slash_idx]:
+            card = self.hand[slash_idx]
+            info = card.info
+            pygame.draw.rect(s, (18, 35, 42), (462, 544, 792, 20))
+            pygame.draw.rect(s, (120, 245, 255), (462, 544, 792, 20), 1)
+            self.text(s, "滑剪", (470, 548), (150, 245, 255), self.font11)
+            hit_n = len(self.slash.get("links", [])) if self.slash else 0
+            self.text(s, f"拖动划过引用线 · {info['cn']}：{info['desc']}",
+                      (520, 548), TEXT, self.font11)
+            self.text(s, f"命中 {hit_n} 条 · 右键取消" if self.slash else "松开执行 · 右键取消",
+                      (1080, 548), (190, 230, 240), self.font10 if hasattr(self, "font10") else self.font11)
+        elif self.card_target is not None and 0 <= self.card_target < len(self.hand) and self.hand[self.card_target]:
             card = self.hand[self.card_target]
             info = card.info
             pygame.draw.rect(s, (35, 31, 14), (462, 544, 792, 20))
@@ -2375,7 +2636,7 @@ class Battle:
             self.text(s, "右键取消", (1170, 548), DIM, self.font10 if hasattr(self, "font10") else self.font11)
         else:
             self.text(s, "手牌 / HAND", (466, 550), MUTED, self.font11)
-            self.text(s, "点击卡牌 → 点击敌人", (566, 551), DIM, self.mono10)
+            self.text(s, "点击卡牌 → 拖动划过引用线", (566, 551), DIM, self.mono10)
         self.hand_hits = []
         for i in range(5):
             cr = pygame.Rect(468 + i * 158, 568, 148, 132)
@@ -2507,6 +2768,18 @@ class Battle:
     def handle_click(self, pos, button=1):
         if self.cutin:
             return
+        if self.slash_armed is not None:
+            if button == 3:
+                self.slash_armed = None
+            elif button == 1 and ARENA.collidepoint(pos):
+                self.start_slash(pos)
+            else:
+                self.slash_armed = None
+            return
+        if self.slash is not None:
+            if button == 3:
+                self.cancel_slash()
+            return
         if self.card_target is not None:
             if button == 3:
                 self.card_target = None
@@ -2534,6 +2807,8 @@ class Battle:
                 self.exit_to_assembly = True
             else:
                 self.reset()
+            return
+        if button != 1:
             return
         if self.pause_rect.collidepoint(pos):
             self.paused = not self.paused
@@ -2592,6 +2867,8 @@ class Battle:
                     if e.key == pygame.K_ESCAPE:
                         if self.targeting:
                             self.cancel_targeting()
+                        elif self.slash_armed is not None or self.slash is not None:
+                            self.cancel_slash()
                         elif self.card_target is not None:
                             self.card_target = None
                         elif self.cutin:
@@ -2614,8 +2891,13 @@ class Battle:
                     elif e.key == pygame.K_F11:
                         self.windowed = not self.windowed
                         self._set_window()
-                elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
-                    self.handle_click(self.to_logical(e.pos))
+                elif e.type == pygame.MOUSEMOTION:
+                    self.update_slash(self.to_logical(e.pos))
+                elif e.type == pygame.MOUSEBUTTONDOWN:
+                    self.handle_click(self.to_logical(e.pos), e.button)
+                elif e.type == pygame.MOUSEBUTTONUP and e.button == 1:
+                    if self.slash is not None:
+                        self.end_slash(self.to_logical(e.pos))
                 elif e.type == pygame.MOUSEWHEEL:
                     if self.active_rect.collidepoint(self.mouse):
                         self.active_scroll = max(0.0, min(self.active_max, self.active_scroll - e.y * 23))

@@ -16,14 +16,14 @@ body:
       description: 玩家在什么情况下，用什么，得到什么新体验？
       placeholder: 玩家可以把一个敌人回滚到 3 秒前的位置和 HP，用来打断 Boss 蓄力。
     validations:
-      required: true
+      required: false
   - type: textarea
     id: problem
     attributes:
       label: 它解决什么问题
       description: 当前玩法哪里不够？它让玩家多做什么决策？
     validations:
-      required: true
+      required: false
   - type: textarea
     id: rules
     attributes:
@@ -36,14 +36,14 @@ body:
         - 普通敌人：恢复 3 秒前 HP/位置
         - Boss：只恢复位置
     validations:
-      required: true
+      required: false
   - type: textarea
     id: interactions
     attributes:
       label: 与现有机制的交互
       description: WEAK、LINK、GC、护盾、ALIAS、坏死格、画质、Boss 免疫
     validations:
-      required: true
+      required: false
   - type: textarea
     id: scope
     attributes:
@@ -63,7 +63,7 @@ body:
       label: 验收标准
       description: 写成可检查的 Given/When/Then 或勾选清单
     validations:
-      required: true
+      required: false
   - type: textarea
     id: not_included
     attributes:
@@ -77,6 +77,6 @@ body:
       label: 确认
       options:
         - label: 我已搜索过现有 Issue / Roadmap，没有重复
-          required: true
+          required: false
         - label: 这个需求符合当前单人模式范围
-          required: true
+          required: false

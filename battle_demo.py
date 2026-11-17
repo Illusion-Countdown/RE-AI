@@ -1350,11 +1350,51 @@ class Battle:
                                      "text": "RECLAIM +6", "color": (114, 230, 160),
                                      "t": 0.0, "life": 0.8, "vy": -20})
 
+    def separate_enemies(self, dt):
+        movable = {"MINION", "BOMB", "CYCLER"}
+        # Two small passes are enough for the 9-enemy prototype and avoid
+        # the visible "one stack of cursors" that happened around the player.
+        for _ in range(2):
+            for i, a in enumerate(self.enemies):
+                if not a.alive:
+                    continue
+                for b in self.enemies[i + 1:]:
+                    if not b.alive:
+                        continue
+                    dx, dy = b.x - a.x, b.y - a.y
+                    dist = math.hypot(dx, dy)
+                    min_dist = a.r + b.r + 14
+                    if dist >= min_dist:
+                        continue
+                    if dist < 0.001:
+                        ang = ((id(a) * 37 + id(b) * 71) % 628) / 100.0
+                        nx, ny = math.cos(ang), math.sin(ang)
+                    else:
+                        nx, ny = dx / dist, dy / dist
+                    overlap = (min_dist - dist) * 0.6
+                    am, bm = a.kind in movable, b.kind in movable
+                    if not am and not bm:
+                        continue
+                    wa = 0.5 if am and bm else (1.0 if am else 0.0)
+                    wb = 1.0 - wa
+                    a.x -= nx * overlap * wa
+                    a.y -= ny * overlap * wa
+                    b.x += nx * overlap * wb
+                    b.y += ny * overlap * wb
+                    if am:
+                        a.x = max(80, min(760, a.x))
+                        a.y = max(120, min(450, a.y))
+                    if bm:
+                        b.x = max(80, min(760, b.x))
+                        b.y = max(120, min(450, b.y))
+
     def spawn_enemy(self, kind, x, y):
         e = Enemy(kind, x, y)
         self.enemies.append(e)
         if kind != "GC_CORE":
             self.add_link("ROOT", e, "strong")
+        # Avoid the first frame of a summon overlapping another enemy.
+        self.separate_enemies(0.0)
         return e
 
     def spawn_wave(self, wave):
@@ -1989,6 +2029,7 @@ class Battle:
             c.update(step, self)
         for e in self.enemies:
             e.update(step, self)
+        self.separate_enemies(step)
         # player projectiles
         for p in list(self.projectiles):
             target = p.target

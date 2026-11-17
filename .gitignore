@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.idea/
+.vscode/
+*.zip
+_enemy_snippet.py
+contact_CL.png
+contact_DS.png

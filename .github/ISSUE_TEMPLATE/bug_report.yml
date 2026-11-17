@@ -1,29 +1,20 @@
-name: Bug report
-description: 报告可复现的崩溃、卡死、数值/界面错误
+name: Bug 报告
+description: 崩溃、卡死、数值或界面异常
 title: "[Bug]: "
 labels: ["bug"]
-assignees: []
 body:
   - type: markdown
     attributes:
       value: |
-        感谢反馈。请尽量提供可复现步骤；如果游戏异常退出，请附根目录的 `crash.log`。
+        感谢反馈。请附上复现步骤；如果游戏异常退出，请附根目录的 `crash.log`。
   - type: input
     id: version
     attributes:
-      label: 版本 / commit
-      description: 例如 v0.5.1-alpha 或 commit hash
-      placeholder: v0.5.1-alpha / 21fb944
+      label: 版本 / 运行环境
+      description: 版本或 commit，以及系统、Python、pygame-ce 版本
+      placeholder: v0.5.1-alpha / Windows 11 / Python 3.14 / pygame-ce 2.5.8
     validations:
-      required: true
-  - type: input
-    id: env
-    attributes:
-      label: 系统环境
-      description: Windows 版本、Python 版本、pygame-ce 版本
-      placeholder: Windows 11 / Python 3.14.0 / pygame-ce 2.5.8
-    validations:
-      required: true
+      required: false
   - type: textarea
     id: steps
     attributes:
@@ -36,50 +27,33 @@ body:
         4. 使用 CUT 划过 WARD 的边
         5. 出现……
     validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: 期望结果
-    validations:
-      required: true
+      required: false
   - type: textarea
     id: actual
     attributes:
       label: 实际结果
-    validations:
-      required: true
-  - type: textarea
-    id: crash
-    attributes:
-      label: crash.log / 报错
-      description: 可直接粘贴；也可拖入文件
-      render: text
+      description: 发生了什么，和预期哪里不同
     validations:
       required: false
   - type: textarea
-    id: media
+    id: expected
     attributes:
-      label: 截图 / 录屏
-      description: 拖入图片或视频
+      label: 期望结果（可选）
     validations:
       required: false
-  - type: dropdown
-    id: reproducible
+  - type: textarea
+    id: logs
     attributes:
-      label: 可复现性
-      options:
-        - 稳定复现
-        - 偶发
-        - 只出现一次
+      label: 日志 / 截图（可选）
+      description: 粘贴 `crash.log` 或报错，也可以直接拖入截图、录屏
     validations:
-      required: true
+      required: false
   - type: checkboxes
     id: checks
     attributes:
       label: 确认
       options:
         - label: 我已搜索过现有 Issue，没有重复
-          required: true
-        - label: 我没有在公开 Issue 中放入密钥/隐私信息
-          required: true
+          required: false
+        - label: 我没有在公开 Issue 中放入密钥或隐私信息
+          required: false

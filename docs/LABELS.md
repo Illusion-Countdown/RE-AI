@@ -53,26 +53,28 @@ Urgent Ultra  >  Urgent  >  High  >  Medium  >  Low
 | 启动游戏立即崩溃 | `Urgent Ultra` + `bug` |
 | 存档后进度丢失 | `Urgent Ultra` + `bug` |
 | 某个 Boss 稳定卡死，无法通关 | `Urgent` + `bug` |
-| 某张卡伤害明显过高，但可以避开 | `High` + `bug` |
+| 某张卡伤害明显过高，但可以避开 | `High` + `balance` + `bug` |
 | 新增一种敌人行为 | `Medium` + `enhancement` |
 | 主菜单加一个动效 | `Low` + `enhancement` |
 | 文档里的错别字 | `Low` + `documentation` |
 | 需要作者补充复现信息 | `question`，暂不加优先级 |
 
-## 2. 类型标签
+## 2. 类型与状态标签
 
-一个 Issue 至少有一个类型标签；类型和优先级可以同时存在。
+一个 Issue 至少有一个类型标签；类型、状态和优先级可以同时存在。
 
 | 标签 | 用途 |
 |---|---|
 | `bug` | 可复现的错误行为、崩溃、数值或界面异常 |
 | `enhancement` | 新玩法、新卡、新敌人、新系统或体验改进 |
 | `documentation` | 文档新增、修订、纠错 |
+| `performance` | 性能问题：帧率、内存、GC、加载时间等 |
+| `balance` | 数值平衡：卡牌、敌人、经济或 Boss |
 | `question` | 信息不足，需要提问或补充 |
 | `accessibility` | 影响无障碍使用的障碍 |
 | `good first issue` | 维护者确认适合新人的任务 |
 | `help wanted` | 需要外部协助，但维护者仍会 review |
-| `try` | 实验性想法或技术验证，通常带时间盒，不承诺落地 |
+| `blocked` | 等待依赖、设计决策或其他人；解除后移除 |
 | `duplicate` | 与已有 Issue / PR 重复 |
 | `invalid` | 不符合范围、无法复现或信息不足 |
 | `wontfix` | 明确不做 |
@@ -80,7 +82,8 @@ Urgent Ultra  >  Urgent  >  High  >  Medium  >  Low
 补充约定：
 
 - `good first issue` 必须由维护者确认，不能作者自己加。
-- `try` 只表示“可以试”，不表示已经排期。
+- `performance` 和 `balance` 是主题标签，仍需配合 `bug` 或 `enhancement` 说明是修问题还是做改进。
+- `blocked` 是状态标签，不代替优先级；解除阻塞后移除。
 - `duplicate` / `invalid` / `wontfix` 关闭时，尽量留言说明原因和替代链接。
 
 ## 3. 谁来设置
@@ -95,7 +98,7 @@ Urgent Ultra  >  Urgent  >  High  >  Medium  >  Low
 
 在给标签前问自己：
 
-1. 这是类型标签还是优先级标签？
+1. 这是类型、状态还是优先级标签？
 2. 是否已经有且只有一个优先级？
 3. P0 / P1 的理由是否能写成一句话？
 4. 这个优先级是否只是“我希望它快点做”？

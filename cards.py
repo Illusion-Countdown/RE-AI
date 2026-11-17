@@ -113,6 +113,18 @@ CARDS = [
         "up": "减速延长至 8 秒。",
     },
     {
+        "key": "PATCH", "cn": "热补丁", "en": "PATCH", "cat": "MEM", "rarity": 0,
+        "cells": [(0, 0), (0, 1)], "mb": 3, "work": 0, "target": "自身",
+        "effect": "回复生命比例最低角色 18% 最大生命。",
+        "up": "回复量提升至 24%。",
+    },
+    {
+        "key": "STITCH", "cn": "缝合", "en": "STITCH", "cat": "MEM", "rarity": 1,
+        "cells": [(0, 0), (0, 1), (1, 0)], "mb": 4, "work": 0, "target": "自身",
+        "effect": "回复生命最低角色 12% 最大生命，并给予 2 秒减伤。",
+        "up": "回复量提升至 18%。",
+    },
+    {
         "key": "EDGE", "cn": "锐化", "en": "EDGE", "cat": "CUT", "rarity": 1,
         "kind": "passive", "cells": [(0, 0), (0, 1), (1, 0)], "mb": 3, "work": 0, "target": "被动",
         "effect": "滑剪命中判定宽度 +8，更容易一次划过多条引用。",

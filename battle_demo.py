@@ -196,12 +196,15 @@ class Character:
         self.attack_cd = 0.4
         self.skill_cd = 0.0
         self.ult_cd = 0.0
+        self.ult_energy = 0.0
+        self.ult_used = False
         self.state = "idle"
         self.anim = Anim(cid, "idle")
         self.cast = None
         self.shield = 0.0
         self.shield_t = 0.0
         self.share_t = 0.0
+        self.guard_t = 0.0
         self.hurt_t = 0.0
         self.dead = False
         self.removed = False
@@ -262,20 +265,32 @@ class Character:
         return True
 
     def start_ult(self, battle):
-        if self.dead or self.ult_cd > 0 or self.state in ("skill", "ult"):
-            battle.error("大招冷却中" if self.ult_cd > 0 else "当前无法释放")
+        if self.dead or self.ult_used or self.ult_energy < 100 or self.state in ("skill", "ult"):
+            if self.ult_used:
+                battle.error("本场大招已使用")
+            elif self.ult_energy < 100:
+                battle.error(f"大招能量 {int(self.ult_energy)}/100")
+            else:
+                battle.error("当前无法释放")
             return False
         if self.state == "attack":
             self.cast = None
+        self.ult_used = True
+        self.ult_energy = 0.0
         self.burst_t = 0.0
         self.evade_t = 0.0
         self.state = "ult"
         self.anim.play("ult")
-        self.ult_cd = 20.0
+        self.ult_cd = 0.0
         self.cast = {"kind": "ult", "t": 0.0, "impact": self.anim.duration() * 0.43, "fired": False}
         battle.on_cast(self, "ult")
         battle.begin_cutin(self)
         return True
+
+    def gain_ult(self, amount):
+        if self.ult_used or self.dead:
+            return
+        self.ult_energy = min(100.0, self.ult_energy + amount)
 
     def die(self, battle):
         if self.dead:
@@ -302,6 +317,8 @@ class Character:
             battle.dodge_text(self)
             return
         amount = max(1.0, amount)
+        if self.guard_t > 0:
+            amount *= 0.7
         absorbed = min(self.shield, amount)
         self.shield -= absorbed
         amount -= absorbed
@@ -386,6 +403,7 @@ class Character:
         if self.shield_t <= 0:
             self.shield = 0.0
         self.share_t = max(0.0, self.share_t - dt)
+        self.guard_t = max(0.0, self.guard_t - dt)
         self.anim.update(dt)
 
         # skills/ults own the body until the clip ends
@@ -626,6 +644,8 @@ CARD_INFO = {
     "ECC": {"cn": "纠错补块", "en": "ECC", "color": (114, 230, 160), "desc": "修复 30 保真度"},
     "LOSSY": {"cn": "有损爆发", "en": "LOSSY", "color": (255, 160, 80), "desc": "全体70 / 保真-10"},
     "DOWN": {"cn": "降采样", "en": "DOWN", "color": (114, 230, 160), "desc": "减速 5s"},
+    "PATCH": {"cn": "热补丁", "en": "PATCH", "color": (120, 245, 170), "desc": "回复 18% 生命"},
+    "STITCH": {"cn": "缝合", "en": "STITCH", "color": (140, 240, 190), "desc": "回复 12% + 减伤"},
     "EDGE": {"cn": "锐化", "en": "EDGE", "color": (80, 214, 255), "desc": "滑剪判定 +8", "passive": True},
     "RECLAIM": {"cn": "回收协议", "en": "RECLAIM", "color": (114, 230, 160), "desc": "GC 回复 6 保真", "passive": True},
     "OVERCLOCK": {"cn": "超频", "en": "OVERCLOCK", "color": (255, 200, 87), "desc": "我方伤害 +12%", "passive": True},
@@ -638,6 +658,7 @@ MEMORY_CD = {
     "WEAKEN": 10.0, "LINK": 10.0, "VOID": 12.0, "TRUNC": 9.0,
     "DELAY": 10.0, "REFLECT": 12.0, "ALIAS": 12.0, "STEAL": 10.0,
     "COMPRESS": 14.0, "ECC": 12.0, "LOSSY": 12.0, "DOWN": 8.0,
+    "PATCH": 9.0, "STITCH": 11.0,
 }
 
 # 8x8 内存版，8 张已装载技能，存在 2 处重叠。
@@ -654,10 +675,12 @@ MEMORY_LAYOUT = [
 
 
 class MemoryCard:
-    def __init__(self, key, origin=(0, 0), shape=None, cells=None, uid=None, damaged=False, kind="active"):
+    def __init__(self, key, origin=(0, 0), shape=None, cells=None, uid=None, damaged=False,
+                 kind="active", plus=0):
         self.key = key
         self.info = CARD_INFO[key]
         self.kind = kind
+        self.plus = plus
         if cells is not None:
             self.cells = {(int(r), int(c)) for r, c in cells}
         else:
@@ -690,6 +713,15 @@ ENEMY_DEFS = {    "MINION": {"cn": "游标", "hp": 150, "dmg": 36, "period": 2.2
               "r": 20, "color": (235, 100, 220)},
     "GC_CORE": {"cn": "回收核心", "hp": 1800, "dmg": 0, "period": 99.0, "speed": 0, "keep": 0,
                 "r": 48, "color": (255, 90, 210)},
+    "AUDITOR": {"cn": "审计官", "hp": 2600, "dmg": 52, "period": 2.0, "speed": 0, "keep": 0,
+                "r": 40, "color": (255, 170, 80)},
+}
+
+
+ENEMY_VALUE = {
+    "MINION": 2, "SENTINEL": 4, "WARD": 4, "BOMB": 3,
+    "CYCLER": 5, "QUANTIZER": 7, "ALLOCATOR": 5,
+    "PYLON": 4, "GC_CORE": 30, "AUDITOR": 25,
 }
 
 
@@ -712,9 +744,10 @@ class RefLink:
 
 
 class Enemy:
-    def __init__(self, kind, x, y):
+    def __init__(self, kind, x, y, summoned=False):
         self.kind = kind
         self.d = ENEMY_DEFS[kind]
+        self.summoned = summoned
         self.name = self.d["cn"]
         self.x, self.y = float(x), float(y)
         self.max_hp = float(self.d["hp"])
@@ -818,6 +851,8 @@ class Enemy:
             return
         self.dead = True
         self.hp = 0
+        if not self.summoned:
+            battle.kills_value += ENEMY_VALUE.get(self.kind, 0)
         battle.spawn_particles(self.x, self.y, self.color, 22 if cause == "gc" else 14, 140)
         battle.rings.append({"x": self.x, "y": self.y, "r": 8, "max": 70,
                              "t": 0.0, "life": 0.45, "color": self.color})
@@ -876,7 +911,7 @@ class Enemy:
                 battle.spawn_particles(self.x, self.y, (255, 90, 210), 20, 150)
                 battle.flash(0.12, (255, 80, 200), 0.25)
                 if random.random() < 0.5:
-                    battle.spawn_enemy("MINION", self.x - 80, self.y + 65)
+                    battle.spawn_enemy("MINION", self.x - 80, self.y + 65, summoned=True)
             return
 
         if self.kind in ("MINION", "BOMB", "CYCLER"):
@@ -894,7 +929,8 @@ class Enemy:
             self.special_cd -= dt
             if self.special_cd <= 0:
                 self.special_cd = 5.0
-                battle.spawn_enemy("MINION", self.x + random.uniform(-55, 55), self.y + 70)
+                battle.spawn_enemy("MINION", self.x + random.uniform(-55, 55), self.y + 70,
+                                   summoned=True)
                 battle.rings.append({"x": self.x, "y": self.y, "r": 8, "max": 42,
                                      "t": 0.0, "life": 0.4, "color": (80, 220, 210)})
 
@@ -987,6 +1023,14 @@ class Enemy:
             pygame.draw.circle(s, (255, 90, 210), (x, y), r - 18, 2)
             pulse = int(6 + 3 * (0.5 + 0.5 * math.sin(t * 4)))
             pygame.draw.circle(s, (255, 230, 250), (x, y), pulse)
+        elif self.kind == "AUDITOR":
+            pygame.draw.circle(s, (40, 24, 18), (x, y), r)
+            pygame.draw.circle(s, col, (x, y), r, 3)
+            for i in range(8):
+                a = i * math.tau / 8 + t * 0.5
+                pygame.draw.line(s, col, (x + math.cos(a) * (r - 8), y + math.sin(a) * (r - 8)),
+                                 (x + math.cos(a) * (r + 8), y + math.sin(a) * (r + 8)), 2)
+            pygame.draw.circle(s, (255, 235, 175), (x, y), 6)
         else:
             pygame.draw.rect(s, (18, 34, 28), (x - r, y - r, r * 2, r * 2))
             pygame.draw.rect(s, col, (x - r, y - r, r * 2, r * 2), 2)
@@ -1010,10 +1054,15 @@ def draw_root(s, root):
 
 
 class Battle:
-    def __init__(self, windowed=False, shot=None, size=None, loadout=None, embedded=False):
+    def __init__(self, windowed=False, shot=None, size=None, loadout=None, embedded=False,
+                 party_hp=None, recruited=True, encounter=None, root_count=3):
         pygame.init()
         self.embedded = embedded
         self.loadout = loadout
+        self.party_hp = party_hp or {}
+        self.recruited = recruited
+        self.encounter = encounter
+        self.root_count = root_count
         self.result = None
         self.exit_to_assembly = False
         self.audio = UIAudio()
@@ -1073,13 +1122,27 @@ class Battle:
     def reset(self):
         self.ds = Character("ds", "小忆", "DEEPSEEK", "伤害 · 远程", CYAN, self.p_ds, 330, 390)
         self.claude = Character("claude", "克劳", "CLAUDE", "辅助 · 治疗", AMBER, self.p_cl, 250, 420)
-        self.chars = [self.ds, self.claude]
-        self.roots = [(330, 28), (405, 28), (480, 28)]
+        self.ds.max_hp = 420.0
+        self.claude.max_hp = 480.0
+        self.ds.hp = min(self.ds.max_hp, float(self.party_hp.get("ds", self.ds.max_hp)))
+        self.claude.hp = min(self.claude.max_hp, float(self.party_hp.get("claude", self.claude.max_hp)))
+        if not self.recruited:
+            self.claude.dead = True
+            self.claude.removed = True
+            self.claude.hp = 0
+        self.chars = [self.ds, self.claude] if self.recruited else [self.ds]
+        if self.root_count >= 5:
+            self.roots = [(300, 28), (405, 28), (510, 28), (120, 250), (690, 250)]
+        elif self.root_count >= 4:
+            self.roots = [(300, 28), (405, 28), (510, 28), (405, 460)]
+        else:
+            self.roots = [(330, 28), (405, 28), (480, 28)]
         self.root = self.roots[0]
         self.root_cursor = 0
         self.enemies = []
         self.wave = 1
-        self.wave_max = 3
+        self.wave_max = 1 if self.encounter else 3
+        self.kills_value = 0
         self.wave_t = 0.0
         self.wave_banner = 0.0
         self.fidelity = 100.0
@@ -1100,7 +1163,7 @@ class Battle:
             self.memory_cards = [
                 MemoryCard(c.get("key"), cells=c.get("cells") or [],
                            uid=c.get("uid"), damaged=bool(c.get("damaged")),
-                           kind=c.get("kind", "active"))
+                           kind=c.get("kind", "active"), plus=int(c.get("plus", 0)))
                 for c in self.loadout.get("cards", [])
                 if c.get("key") in CARD_INFO
             ]
@@ -1279,7 +1342,7 @@ class Battle:
         x, y = self._card_throw_pos(card)
         self.card_throws.append({
             "key": card.key,
-            "name": card.info["cn"],
+            "name": card.info["cn"] + ("+" * card.plus),
             "color": (255, 82, 98),
             "x": float(x),
             "y": float(y),
@@ -1348,6 +1411,9 @@ class Battle:
             self.spawn_particles(mx, my, link.color, 10, 100)
             self.numbers.append({"x": mx, "y": my, "text": "CUT",
                                  "color": link.color, "t": 0.0, "life": 0.65, "vy": -20})
+            self.ds.gain_ult(15 if link.kind in ("strong", "cycle") else 5)
+            if self.recruited:
+                self.claude.gain_ult(12 if link.kind in ("strong", "cycle") else 4)
         if link.kind in ("strong", "cycle") and target.kind != "GC_CORE" and target.alive and target.refcount == 0:
             target.die(self, "gc")
             if self.passive_active("RECLAIM"):
@@ -1394,8 +1460,8 @@ class Battle:
                         b.x = max(80, min(760, b.x))
                         b.y = max(120, min(450, b.y))
 
-    def spawn_enemy(self, kind, x, y):
-        e = Enemy(kind, x, y)
+    def spawn_enemy(self, kind, x, y, summoned=False):
+        e = Enemy(kind, x, y, summoned=summoned)
         self.enemies.append(e)
         if kind != "GC_CORE":
             root = self.roots[self.root_cursor % len(self.roots)]
@@ -1419,9 +1485,24 @@ class Battle:
         root_counts = {
             "MINION": 1, "SENTINEL": 3, "WARD": 2,
             "BOMB": 1, "CYCLER": 1, "QUANTIZER": 3,
-            "ALLOCATOR": 2, "PYLON": 1, "GC_CORE": 0,
+            "ALLOCATOR": 2, "PYLON": 1, "GC_CORE": 0, "AUDITOR": 3,
         }
-        if wave == 1:
+        if self.encounter == "boss_a":
+            self.spawn_enemy("AUDITOR", 650, 190)
+            self.spawn_enemy("WARD", 520, 120)
+            self.spawn_enemy("WARD", 790, 120)
+            boss, w1, w2 = self.enemies
+            self.add_link(w1, boss, "support")
+            self.add_link(w2, boss, "support")
+        elif self.encounter == "boss_b":
+            self.spawn_enemy("GC_CORE", 650, 205)
+            self.spawn_enemy("PYLON", 520, 120)
+            self.spawn_enemy("PYLON", 650, 95)
+            self.spawn_enemy("PYLON", 780, 120)
+            core, p1, p2, p3 = self.enemies
+            for pylon in (p1, p2, p3):
+                self.add_link(pylon, core, "support")
+        elif wave == 1:
             self.spawn_enemy("SENTINEL", 600, 150)
             self.spawn_enemy("WARD", 690, 110)
             self.spawn_enemy("MINION", 680, 405)
@@ -1834,10 +1915,11 @@ class Battle:
             self.cancel_slash()
             return
         key = card.key
+        plus = card.plus
         if key == "WEAK":
             targets = {l.target for l in links}
             for t in targets:
-                t.weak_t = 6.0
+                t.weak_t = 6.0 + 2.0 * plus
                 self.numbers.append({"x": t.x, "y": t.y - t.r - 34, "text": "WEAK",
                                      "color": PURPLE, "t": 0.0, "life": 0.7, "vy": -20})
             cut_links = []
@@ -1845,15 +1927,15 @@ class Battle:
         elif key == "TRUNC":
             targets = {l.target for l in links}
             for t in targets:
-                t.take_damage(80 * self.fidelity_damage_mult(), self, AMBER)
-                t.stun_t = max(t.stun_t, 1.0)
+                t.take_damage((80 + 40 * plus) * self.fidelity_damage_mult(), self, AMBER)
+                t.stun_t = max(t.stun_t, 1.0 + 0.5 * plus)
                 t.no_destructor = True
             cut_links = []
             valid_effect = bool(targets)
         elif key == "DOWN":
             targets = {l.target for l in links}
             for t in targets:
-                t.slow_t = 5.0
+                t.slow_t = 5.0 + 2.0 * plus
                 self.numbers.append({"x": t.x, "y": t.y - t.r - 34, "text": "SLOW",
                                      "color": GREEN, "t": 0.0, "life": 0.7, "vy": -20})
             cut_links = []
@@ -1870,17 +1952,19 @@ class Battle:
             valid_effect = bool(cut_links)
             if valid_effect:
                 self.numbers.append({"x": target.x, "y": target.y - target.r - 42,
-                                     "text": "CLIP", "color": CYAN,
+                                     "text": "CLIP" + ("+" * plus), "color": CYAN,
                                      "t": 0.0, "life": 0.7, "vy": -20})
         else:
             strong = [l for l in links if l.kind in ("strong", "cycle")]
             if key == "CUT":
-                cut_links = strong[:1]
+                cut_links = strong[:1 + plus]
             elif key == "SWEEP":
                 by_target = {}
                 for l in strong:
-                    by_target.setdefault(id(l.target), l)
-                cut_links = list(by_target.values())
+                    by_target.setdefault(id(l.target), []).append(l)
+                cut_links = []
+                for group in by_target.values():
+                    cut_links.extend(group[:1 + plus])
             else:
                 cut_links = strong
             valid_effect = bool(cut_links)
@@ -1913,7 +1997,7 @@ class Battle:
             self.slash_armed = index
             self.audio.play("pick")
             return
-        if key in ("ECC", "LOSSY"):
+        if key in ("ECC", "LOSSY", "PATCH", "STITCH"):
             self.use_card(index, None)
             return
         self.card_target = index
@@ -1924,7 +2008,8 @@ class Battle:
         if card is None or card.damaged:
             return
         key = card.key
-        targetless = key in ("ECC", "LOSSY", "SWEEP")
+        plus = card.plus
+        targetless = key in ("ECC", "LOSSY", "SWEEP", "PATCH", "STITCH")
         if not targetless and (enemy is None or not enemy.alive):
             return
         if key == "CUT":
@@ -1984,9 +2069,21 @@ class Battle:
             self.numbers.append({"x": self.ds.x, "y": self.ds.y - 90, "text": "COMPRESS +30%",
                                  "color": (255, 180, 100), "t": 0.0, "life": 1.0, "vy": -20})
         elif key == "ECC":
-            self.change_fidelity(30.0, "ecc")
+            self.change_fidelity(30.0 + 10.0 * plus, "ecc")
             self.rings.append({"x": self.ds.x, "y": self.ds.y - 40, "r": 8, "max": 70,
                                "t": 0.0, "life": 0.5, "color": GREEN})
+        elif key in ("PATCH", "STITCH"):
+            living = [c for c in self.chars if c.alive and not c.removed]
+            if living:
+                target = min(living, key=lambda c: c.hp / max(1, c.max_hp))
+                ratio = (0.18 if key == "PATCH" else 0.12) + (0.06 if key == "PATCH" else 0.04) * plus
+                heal = target.max_hp * ratio
+                target.hp = min(target.max_hp, target.hp + heal)
+                self.heal_number(target.x, target.y - 70, heal)
+                if key == "STITCH":
+                    target.guard_t = max(target.guard_t, 2.0)
+                    self.rings.append({"x": target.x, "y": target.y - 30, "r": 8, "max": 48,
+                                       "t": 0.0, "life": 0.45, "color": GREEN})
         elif key == "LOSSY":
             for e in self.enemies:
                 if e.alive:
@@ -2067,6 +2164,10 @@ class Battle:
             dist = math.hypot(dx, dy) or 1
             if dist < target.r + p.radius:
                 target.take_damage(p.damage, self, p.color)
+                if p.kind == "ds":
+                    self.ds.gain_ult(8)
+                elif self.recruited:
+                    self.claude.gain_ult(8)
                 self.spawn_particles(p.x, p.y, p.color, 7)
                 self.flash(0.025, p.color, 0.12)
                 self.hit_stop(0.018)
@@ -2343,8 +2444,18 @@ class Battle:
             pygame.draw.rect(s, (28, 20, 27), bar)
             pygame.draw.rect(s, c.color, (bar.x, bar.y, int(bar.w * c.hp / c.max_hp), bar.h))
             pygame.draw.rect(s, (78, 97, 112), bar, 1)
-            self.text(s, f"{int(c.hp)}/{c.max_hp}", (r.x + 10, r.y + 90), MUTED, self.mono10)
-            self.text(s, "ENERGY ∞", (r.x + 10, r.y + 108), CYAN, self.mono10)
+            self.text(s, f"{int(c.hp)}/{int(c.max_hp)}", (r.x + 10, r.y + 90), MUTED, self.mono10)
+            ult_txt = "USED" if c.ult_used else f"ULT {int(c.ult_energy)}/100"
+            self.text(s, ult_txt, (r.x + 10, r.y + 108),
+                      AMBER if c.ult_energy >= 100 or c.ult_used else CYAN, self.mono10)
+            if c.ult_energy >= 100 and not c.ult_used and not c.dead:
+                flow = (150 + int(60 * (0.5 + 0.5 * math.sin(self.time * 7))),
+                        225, 255)
+                pygame.draw.rect(s, flow, r, 2)
+                for j in range(4):
+                    px = r.x + int((self.time * 70 + j * r.w / 4) % r.w)
+                    pygame.draw.circle(s, (255, 245, 170), (px, r.y), 2)
+                    pygame.draw.circle(s, (255, 210, 100), (px, r.bottom - 1), 2)
             if c.dead:
                 self.text(s, "OFFLINE" if c.removed else "DEAD", (r.x + 96, r.y + 108), RED, self.mono10)
             elif c.shield > 0:
@@ -2619,7 +2730,7 @@ class Battle:
                 ov = pygame.Surface((ow, row.h), pygame.SRCALPHA)
                 ov.fill((125, 136, 148, 105))
                 s.blit(ov, row.topleft)
-            name = card.info["cn"] + (" BROKEN" if red else "")
+            name = card.info["cn"] + ("+" * card.plus) + (" BROKEN" if red else "")
             self.text(s, name, (row.x + 8, row.y + 4), (255, 210, 215) if red else TEXT, self.font11)
             self.text(s, card.info["en"][:9], (row.right - 88, row.y + 5),
                       (255, 145, 155) if red else card.info["color"], self.mono10)
@@ -2721,24 +2832,43 @@ class Battle:
         hpbar = pygame.Rect(panel.x + 82, panel.y + 52, 230, 8)
         pygame.draw.rect(s, (28, 20, 27), hpbar)
         pygame.draw.rect(s, c.color, (hpbar.x, hpbar.y, int(hpbar.w * c.hp / c.max_hp), hpbar.h))
-        self.text(s, f"HP {int(c.hp)}/{c.max_hp}", (panel.x + 82, panel.y + 64), MUTED, self.mono10)
-        self.text(s, "ENERGY ∞", (panel.x + 248, panel.y + 64), CYAN, self.mono10)
+        self.text(s, f"HP {int(c.hp)}/{int(c.max_hp)}", (panel.x + 82, panel.y + 64), MUTED, self.mono10)
+        ult_txt = "USED" if c.ult_used else f"{int(c.ult_energy)}/100"
+        self.text(s, f"ULT {ult_txt}", (panel.x + 248, panel.y + 64),
+                  AMBER if c.ult_energy >= 100 or c.ult_used else CYAN, self.mono10)
         # buttons
         self.command_hits = []
         specs = [
             ("skill", "Q", "裂空跃击" if c.cid == "ds" else "书灵修补", c.skill_cd,
              8.0 if c.cid == "ds" else 9.0, c.color),
-            ("ult", "W", "蓝鲸现世" if c.cid == "ds" else "同体校订", c.ult_cd, 20.0, AMBER),
+            ("ult", "W", "蓝鲸现世" if c.cid == "ds" else "同体校订", 0.0, 1.0, AMBER),
         ]
         for i, (kind, key, label, cd, cdmax, col) in enumerate(specs):
             br = pygame.Rect(panel.x + 12 + i * 208, panel.y + 88, 200, 54)
-            ready = cd <= 0 and c.alive
+            if kind == "ult":
+                ready = c.alive and not c.ult_used and c.ult_energy >= 100
+                if c.ult_used:
+                    status = "USED"
+                elif c.ult_energy >= 100:
+                    status = "ENERGY FULL"
+                else:
+                    status = f"ENERGY {int(c.ult_energy)}/100"
+                cd = 1.0 - c.ult_energy / 100.0 if not c.ult_used else 1.0
+            else:
+                ready = cd <= 0 and c.alive
+                status = "READY" if ready else f"CD {cd:.1f}"
             targeting_this = (self.targeting is not None and self.targeting["char"] is c
                               and kind == "skill")
             pygame.draw.rect(s, (19, 37, 50) if ready else (18, 22, 28), br)
-            pygame.draw.rect(s, (180, 245, 255) if targeting_this else (col if ready else (60, 72, 82)),
-                             br, 2 if ready else 1)
-            if cd > 0 and c.alive:
+            border = (180, 245, 255) if targeting_this else (col if ready else (60, 72, 82))
+            pygame.draw.rect(s, border, br, 2 if ready else 1)
+            if kind == "ult" and ready:
+                # flowing frame for a fully charged ultimate
+                for j in range(3):
+                    px = br.x + int((self.time * 54 + j * br.w / 3) % br.w)
+                    pygame.draw.circle(s, (255, 238, 150), (px, br.y), 2)
+                    pygame.draw.circle(s, (255, 210, 100), (px, br.bottom - 1), 2)
+            if cd > 0 and c.alive and not ready:
                 ratio = max(0.0, min(1.0, cd / cdmax))
                 ow = max(0, int(br.w * ratio))
                 if ow > 0:
@@ -2750,10 +2880,10 @@ class Battle:
                                          (br.x + ow, br.bottom - 2), 1)
             self.text(s, f"[{key}]", (br.x + 8, br.y + 6), col if ready else DIM, self.mono10)
             self.text(s, label, (br.x + 34, br.y + 6), TEXT if ready else DIM, self.font12)
-            status = "选择目标" if targeting_this else ("READY" if ready else f"CD {cd:.1f}")
-            self.text(s, status, (br.x + 34, br.y + 27),
-                      (190, 245, 255) if targeting_this else (GREEN if ready else (120, 80, 80)),
-                      self.mono10 if not targeting_this else self.font11)
+            status_col = ((190, 245, 255) if targeting_this else
+                          (GREEN if ready else (255, 210, 100) if kind == "ult" else (120, 80, 80)))
+            self.text(s, "选择目标" if targeting_this else status, (br.x + 34, br.y + 27),
+                      status_col, self.mono10 if not targeting_this else self.font11)
             self.command_hits.append((kind, br))
         # hand
         slash_idx = self.slash["card"] if self.slash else self.slash_armed
@@ -2799,7 +2929,7 @@ class Battle:
             pygame.draw.rect(s, (14, 25, 34) if not selected else (28, 31, 20), cr)
             pygame.draw.rect(s, (255, 220, 100) if selected else info["color"], cr, 2)
             pygame.draw.rect(s, info["color"], (cr.x, cr.y, cr.w, 3))
-            self.text(s, info["cn"], (cr.x + 10, cr.y + 12), TEXT, self.font16)
+            self.text(s, info["cn"] + ("+" * card.plus), (cr.x + 10, cr.y + 12), TEXT, self.font16)
             self.text(s, info["en"], (cr.x + 10, cr.y + 34), info["color"], self.mono10)
             pygame.draw.line(s, (38, 54, 68), (cr.x + 10, cr.y + 54), (cr.right - 10, cr.y + 54), 1)
             self.text(s, info["desc"], (cr.x + 10, cr.y + 66), MUTED, self.font11)
@@ -3063,6 +3193,8 @@ class Battle:
             "necro": sorted(self.necro_cells),
             "damaged": sorted(self.damaged_uids),
             "won": self.state == "victory",
+            "hp": {"ds": max(0.0, self.ds.hp), "claude": max(0.0, self.claude.hp)},
+            "currency": self.kills_value,
         }
         if not self.embedded:
             pygame.quit()

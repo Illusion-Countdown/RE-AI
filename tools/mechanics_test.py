@@ -205,5 +205,29 @@ for n, x, y in saved:
     n.x, n.y = x, y
 print("write range ok")
 
+# CUT-triggered GC: depth-based shockwave damages player and corrupts grid
+from memory_run.runstate import RunState
+from memory_run.battle import Battle
+from memory_run.ui.fx import FX
+r3 = RunState(tutorial=False, seed=7, body_id="tree")
+r3.begin_room()
+b3 = Battle(r3, FX())
+b3.state = "playing"
+hub = b3.by_id["hub"]
+leaf = b3.by_id["m1"]
+assert b3.graph.depth_from_roots(hub) == 1
+assert b3.graph.depth_from_roots(leaf) == 2
+assert b3.shock_radius(hub, 1) > b3.shock_radius(leaf, 2)
+b3.player_node.x, b3.player_node.y = hub.x, hub.y
+b3.hp = b3.max_hp = 100
+hp0 = b3.hp
+dead0 = len(b3.deck.grid.dead)
+edge = next(e for e in b3.graph.edges
+            if e.src is b3.root and e.dst is hub)
+b3.cut_edge(edge)
+assert b3.hp < hp0, "shockwave should damage nearby player"
+assert len(b3.deck.grid.dead) > dead0, "shockwave hit should corrupt grid"
+print("gc shockwave ok")
+
 print("MECHANICS OK")
 pygame.quit()

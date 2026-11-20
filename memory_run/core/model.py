@@ -209,6 +209,25 @@ class Graph:
                 c += 1
         return c
 
+    def depth_from_roots(self, target):
+        """目标到任意 ROOT 的最短引用距离；不可达返回 99。"""
+        roots = [n for n in self.nodes if n.alive and n.kind == "ROOT"]
+        if target in roots:
+            return 0
+        seen = set(roots)
+        queue = [(n, 0) for n in roots]
+        while queue:
+            cur, depth = queue.pop(0)
+            for e in self.outgoing(cur):
+                if not e.alive or not e.dst.alive:
+                    continue
+                if e.dst is target:
+                    return depth + 1
+                if e.dst not in seen:
+                    seen.add(e.dst)
+                    queue.append((e.dst, depth + 1))
+        return 99
+
     def alive_nodes(self):
         return [n for n in self.nodes if n.alive]
 

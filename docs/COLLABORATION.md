@@ -74,8 +74,9 @@ Project: 加入
 payload：source_id, x, y, child_count
 注册人：B，只改 memory_run/events.py
 
-事件总线未落地，需要引入时 @lead；
-事件叫什么名字，B 按 docs/EVENT_NAMING.md 自己定，不用问 Lead。
+事件总线已存在，按每场战斗独立创建；
+事件叫什么名字，B 按 docs/EVENT_NAMING.md 自己定，不用问 Lead；
+只有改总线接口/公共 API 才 @lead。
 
 ## 子任务
 只写编号和 Owner，不写 @。
@@ -158,7 +159,8 @@ payload：source_id, x, y, child_count
 
 - 事件名由发送方按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自己定，**不需要 Lead 审批**。
 - 监听方不要自己轮询状态；监听同一个事件。
-- 事件总线还没落地时：`@lead` 决定“本次是否引入总线”，不是决定名字。
+- 总线已存在：`App.start_battle()` 每场创建独立 `EventBus`；不要新增全局总线。
+- 只有修改总线接口/公共 API 才 `@lead`，不是决定名字。
 - 没有跨层通信就写 `无`，不要为了凑模板硬造事件。
 
 ---

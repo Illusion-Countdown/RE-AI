@@ -87,7 +87,7 @@ SHOP_REROLLED
 memory_run/events.py
 ```
 
-格式是一行一个常量：
+格式是一行一个常量（下面是格式示例，实际注册以 `events.py` 为准）：
 
 ```python
 # --- 敌人 / Enemy ---
@@ -106,11 +106,15 @@ BATTLE_TURN_START = "BATTLE_TURN_START"
 5. **不按监听方命名**。叫 `ENEMY_DIED`，不要叫 `AUDIO_PLAY_DEATH` 或 `UI_SHOW_DEATH`。
 6. **不写裸字符串**。`emit("ENEMY_DIED")` 和 `subscribe("ENEMY_DIED", ...)` 都会被检查脚本拦下。
 
-当前仓库还没有统一的事件总线，所以 `events.py` **暂时是空的**。这是故意的：
+当前仓库已经接入每场战斗独立的 `EventBus`：
 
-- 不硬造没有发送方/接收方的事件。
-- 第一个真正需要跨层事件的 PR，再按本规范注册，并在同一个 PR 里加最小的 `emit` / `subscribe` 接线。
-- 事件总线本身如果要做成公共设施，单独开 Issue / PR，不和某个具体玩法绑在一起。
+- 每次 `App.start_battle()` 创建新的 `EventBus`，传给 `Battle`。
+- `battle/` 只 `emit`，不 import `ui` / `platform.audio`。
+- `ui/battle_fx.py` 负责视觉，`platform/audio_feedback.py` 负责音频。
+- 总线是同步的，`emit` 当场按订阅顺序执行，表现与旧直接调用同一帧。
+- 不预埋没有发送方/接收方的事件；新增事件必须在同一个 PR 里接线。
+
+事件只用于“已经发生的事实”的通知，不用于伤害/GC/卡牌结算等确定性规则。
 
 ---
 
@@ -124,8 +128,9 @@ BATTLE_TURN_START = "BATTLE_TURN_START"
    ```
 
 3. 在同一个 PR 里：
-   - 发送方用 `events.ENEMY_SPLIT_ON_DEATH`；
-   - 监听方用同一个常量；
+   - 发送方用 `self.bus.emit(events.ENEMY_SPLIT_ON_DEATH, ...)`；
+   - 视觉监听方在 `ui/battle_fx.py` 里 `bus.subscribe(...)`；
+   - 音频监听方在 `platform/audio_feedback.py` 里订阅；
    - 在发送方 docstring 或 PR 描述里写清 payload（带哪些字段、字段含义）。
 4. 跑：
 
@@ -136,6 +141,7 @@ BATTLE_TURN_START = "BATTLE_TURN_START"
 5. 提 PR。**不需要先问 Lead 叫什么名字**。
 
 Issue 里怎么写事件契约、谁来发/谁监听，见 [`COLLABORATION.md`](COLLABORATION.md#5-事件契约)。
+现有战斗事件的 payload 见 [`BATTLE_EVENTS.md`](BATTLE_EVENTS.md)。
 
 ---
 

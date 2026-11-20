@@ -8,9 +8,11 @@ from .enemies import EnemiesMixin
 
 
 class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
-    def __init__(self, run, fx):
+    def __init__(self, run, fx, bus=None):
         self.run = run
-        self.fx = fx
+        self.fx = fx              # 渲染层保留的 FX 句柄
+        self.clock = fx           # Battle 只使用时间控制接口
+        self.bus = bus or EventBus()
         self.room = run.room
         self.graph = Graph()
         self.time = 0.0
@@ -178,8 +180,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
                 self.draw_one(initial=True)
         self.normalize_selection()
         self.aim_selected()
-        self.fx.add_text(self.player_node.x, self.player_node.y - 40,
-                         "DECK ONLINE", CYAN, 18, 1.2)
+        self.bus.emit(events.BATTLE_DECK_ONLINE, player=self.player_node)
 
     # ================================================================ 手牌顺序
 
@@ -251,8 +252,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
 
     def nope(self, msg):
         self.toast(msg)
-        self.fx.add_text(self.player_node.x, self.player_node.y - 34,
-                         msg, AMBER, 15, 0.8)
+        self.bus.emit(events.BATTLE_NOTICE, player=self.player_node, msg=msg)
 
     # ================================================================ 抽牌
 
@@ -271,8 +271,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         if where is None:
             self.pile.append(card)
             return None
-        self.fx.add_text(self.player_node.x, self.player_node.y - 54,
-                         f"{card.name}", card.color, 14, 0.8)
+        self.bus.emit(events.BATTLE_DRAW, player=self.player_node, card=card)
         return card
 
     def recycle_after_use(self, card):
@@ -310,8 +309,8 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
             return
         if self.state != "playing":
             return
-        if self.fx.hitstop > 0:
-            self.fx.hitstop = max(0.0, self.fx.hitstop - dt)
+        if self.clock.hitstop > 0:
+            self.clock.hitstop = max(0.0, self.clock.hitstop - dt)
             return
 
         self.plan = bool(inp.get("plan")) and self.focus > 0
@@ -319,7 +318,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
             self.focus = max(0.0, self.focus - dt * 1.4)
         else:
             self.focus = min(self.focus_max, self.focus + dt * 0.45)
-        wdt = dt * (0.35 if self.plan else 1.0) * self.fx.time_scale()
+        wdt = dt * (0.35 if self.plan else 1.0) * self.clock.time_scale()
         self.time += wdt
         self.update_player(wdt, inp)
         self.update_work(wdt)

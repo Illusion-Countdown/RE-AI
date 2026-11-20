@@ -154,9 +154,13 @@ tools/           架构/机制/房间/流程/教程/界面/拖拽/音频回归
 
 - [`docs/README.md`](docs/README.md)
 
-代码结构、文件所有权、分工与接口：
+代码结构、文件所有权、分工与接口、事件总线：
 
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+
+战斗事件 payload 契约：
+
+- [`docs/BATTLE_EVENTS.md`](docs/BATTLE_EVENTS.md)
 
 多角色如何拆父/子 Issue、互相提需求、`@lead` 边界：
 

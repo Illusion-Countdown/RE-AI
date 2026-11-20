@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-"""打击感与屏幕特效：震屏、闪白、顿帧、粒子、浮字、冲击环、故障。"""
+"""屏幕特效：震屏、闪白、粒子、浮字、冲击环、故障。
+
+顿帧/慢放继承 BattleClock；Battle 只依赖那个窄接口。
+"""
 import math
 import random
 import pygame
+from memory_run.battle.clock import BattleClock
 from memory_run.const import *
 
 
@@ -73,22 +77,20 @@ class Spark:
         self.width = width
 
 
-class FX:
+class FX(BattleClock):
     def __init__(self):
+        super().__init__()
         self.shake = 0.0
         self.shake_decay = 6.0
         self.flash_color = (255, 255, 255)
         self.flash = 0.0
         self.flash_decay = 4.0
-        self.hitstop = 0.0
         self.parts = []
         self.floaters = []
         self.rings = []
         self.sparks = []
         self.glitch = 0.0
         self.slowmo = 0.0
-        self.slow_t = 0.0
-        self.slow_scale = 1.0
         self.time = 0.0
         self.vignette_red = 0.0
         self.scan_y = -200.0
@@ -106,17 +108,6 @@ class FX:
             self.flash = amount
             self.flash_color = color
             self.flash_decay = decay
-
-    def add_hitstop(self, t):
-        self.hitstop = max(self.hitstop, t)
-
-    def slow(self, scale=0.35, dur=0.45):
-        """复用 asymptote 的慢放：只影响战斗世界时间。"""
-        self.slow_scale = scale
-        self.slow_t = max(self.slow_t, dur)
-
-    def time_scale(self):
-        return self.slow_scale if self.slow_t > 0 else 1.0
 
     def add_glitch(self, amount):
         self.glitch = max(self.glitch, amount)
@@ -155,16 +146,13 @@ class FX:
 
     # ------------------------------------------------------------ 更新
     def update(self, dt):
+        super().update(dt)
         self.time += dt
         self.shake = max(0.0, self.shake - self.shake_decay * dt * self.shake
                          - 14.0 * dt)
         self.flash = max(0.0, self.flash - self.flash_decay * dt)
         self.glitch = max(0.0, self.glitch - dt * 1.6)
         self.slowmo = max(0.0, self.slowmo - dt)
-        if self.slow_t > 0:
-            self.slow_t = max(0.0, self.slow_t - dt)
-            if self.slow_t <= 0:
-                self.slow_scale = 1.0
         self.vignette_red = max(0.0, self.vignette_red - dt * 1.2)
         self.scan = max(0.0, self.scan - dt * 2.5)
 

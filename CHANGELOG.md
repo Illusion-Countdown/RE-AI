@@ -12,6 +12,10 @@ Alpha 阶段不保证存档/接口兼容。
 
 ### Changed
 
+- 战斗表现/音频改为每场独立事件总线：`Battle` 只发语义事件，`ui/battle_fx.py` 与 `platform/audio_feedback.py` 各自监听；战斗层不再直接调用 FX/audio
+- 顿帧/慢放拆到 `battle/clock.py`，`Battle` 只依赖窄时钟接口
+- 新增 `tools/feedback_test.py`，检查事件订阅、监听器接线、CUT 表现和战斗层无直接 FX/audio 调用
+- 新增 `docs/BATTLE_EVENTS.md`，记录 57 个战斗事件的 payload 契约
 - 手牌改为 3 张：初始抽 3，用 1 抽 1，移除自动抽牌、备用/溢出和洗回
 - 每张卡每房第一次使用后随机放回牌堆，第二次使用后本房耗尽；下一房重置
 - 战斗界面改为全屏战场 + 透明浮层；手牌居中，选中牌高亮

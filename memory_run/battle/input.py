@@ -119,8 +119,7 @@ class InputMixin:
         self.free_gc_used = True
         self.gc_dirty = True
         self.toast("免费 GC：引用归零的对象立即回收")
-        self.fx.add_flash(0.18, CYAN, 6)
-        self.fx.add_glitch(0.3)
+        self.bus.emit(events.BATTLE_FREE_GC, player=self.player_node)
 
     def necro_bomb(self):
         if not self.run.has("necro_bomb") or self.necro_bomb_used:
@@ -134,7 +133,7 @@ class InputMixin:
         self.explode(self.player_node.x, self.player_node.y, 230, 60, MAGENTA)
         self.work_used = max(0.0, self.work_used - 2)
         self.toast("坏死引爆：消耗 1 个坏死格")
-        audio.play("boom")
+        self.bus.emit(events.BATTLE_NECRO_BOMB, player=self.player_node)
 
     def dead_code(self):
         if not self.run.has("dead_code") or self.dead_code_used:
@@ -144,9 +143,8 @@ class InputMixin:
         for n in self.graph.hostiles():
             n.stun = max(n.stun, 3.0)
             n.timers["atk"] = max(n.timers["atk"], 3.0)
-        self.fx.add_flash(0.2, CYAN, 5)
         self.toast("死代码消除：全场敌人停火 3 秒")
-        audio.play("cast")
+        self.bus.emit(events.BATTLE_DEAD_CODE, player=self.player_node)
 
     def on_mouse_move(self, pos):
         self.mouse = pos
@@ -159,7 +157,7 @@ class InputMixin:
                 self.slash.append(pos)
                 if len(self.slash) > 64:
                     self.slash.pop(1)
-            self.fx.add_parts(pos[0], pos[1], CYAN, 1, 40, 0.18, 1.2)
+            self.bus.emit(events.BATTLE_SLASH_TRAIL, pos=pos)
 
     def on_mouse_down(self, pos, button, mods=0):
         self.mouse = pos
@@ -194,7 +192,8 @@ class InputMixin:
                 self.aim["src"] = n
                 self.aim["stage"] = 1
                 self.two_drag = pos
-                self.fx.add_ring(n.x, n.y, 5, 28, card.color, 0.25, 2)
+                self.bus.emit(events.BATTLE_TARGET_PICK, node=n,
+                              color=card.color)
             else:
                 if n is self.aim["src"]:
                     return

@@ -52,14 +52,8 @@ class ActionsMixin:
         self.edge_drag = None
         self.stats["cards"] += 1
         self.run.stats["cards"] += 1
-        self.fx.add_flash(0.025, card.color, 11)
-        self.fx.add_shake(1.2, 9)
-        if self.card_work(card):
-            self.fx.add_text(self.player_node.x + 26, self.player_node.y - 18,
-                             f"-{self.card_work(card)} WORK", AMBER, 11, 0.7)
-        self.fx.add_ring(self.player_node.x, self.player_node.y,
-                         6, 42, card.color, 0.3, 2)
-        audio.play("select")
+        self.bus.emit(events.BATTLE_CARD_CAST, card=card,
+                      work=self.card_work(card), player=self.player_node)
         return True
 
     def release_without_target(self, card, where):
@@ -77,9 +71,8 @@ class ActionsMixin:
         self.edge_drag = None
         self.stats["cards"] += 1
         self.run.stats["cards"] += 1
-        self.fx.add_text(self.player_node.x, self.player_node.y - 34,
-                         f"{card.name} · 无目标释放", card.color, 12, 0.8)
-        audio.play("select")
+        self.bus.emit(events.BATTLE_CARD_RELEASED, card=card,
+                      player=self.player_node)
         return True
 
     def apply_card(self, card, target):
@@ -96,8 +89,8 @@ class ActionsMixin:
                 if self.cut_edge(e):
                     cut += 1
             if cut:
-                self.fx.add_text(self.player_node.x, self.player_node.y - 40,
-                                 f"CUT x{cut}", CYAN, 16, 0.8)
+                self.bus.emit(events.BATTLE_CUT_RESULT,
+                              player=self.player_node, count=cut)
             return cut > 0
         if key == "LINK":
             if not isinstance(target, (list, tuple)) or len(target) < 2:
@@ -143,8 +136,8 @@ class ActionsMixin:
             for e in edges[:n]:
                 self.pending_cuts.append({"edge": e, "t": delay})
             if edges:
-                self.fx.add_text(self.player_node.x, self.player_node.y - 40,
-                                 f"DELAY {delay:.0f}s", AMBER, 15, 0.9)
+                self.bus.emit(events.BATTLE_DELAY_SET,
+                              player=self.player_node, delay=delay)
             return bool(edges)
         if key == "REFLECT":
             e = target[0] if isinstance(target, (list, tuple)) and target else target
@@ -161,16 +154,14 @@ class ActionsMixin:
             added = self.run.add_dead_cells(3 if up else 2)
             if added:
                 self.toast(f"有损爆发：永久毁掉 {added} 个空闲格")
-            self.fx.add_shake(14, 3)
-            audio.play("boom")
+            self.bus.emit(events.BATTLE_LOSSY,
+                          player=self.player_node, added=added)
             return True
         if key == "DOWN":
             self.slow_t = max(self.slow_t, 7.0 if up else 5.0)
             self.quality_penalty = min(45.0, self.quality_penalty + (15 if up else 20))
-            self.fx.add_flash(0.15, CYAN, 5)
-            self.fx.add_ring(target[0], target[1], 10, 260, CYAN, 0.6, 3)
             self.toast("降采样：敌人和子弹变慢，画质下降")
-            audio.play("glitch")
+            self.bus.emit(events.BATTLE_DOWNSAMPLE, point=target)
             return True
         return False
 
@@ -187,10 +178,8 @@ class ActionsMixin:
             return False
         if dst.data.get("barrier") and not dst.data.get("barrier_used"):
             dst.data["barrier_used"] = True
-            self.fx.add_ring(dst.x, dst.y, dst.r * 0.7, dst.r * 2.2, BLUE, 0.4, 3)
-            self.fx.add_text(dst.x, dst.y - dst.r - 12, "BARRIER", BLUE, 14, 1.0)
             self.toast("屏障吸收了这次剪断（每个对象一次）")
-            audio.play("weak")
+            self.bus.emit(events.BATTLE_EDGE_BARRIER, dst=dst)
             return False
         if self.run.has("steal") and e.src is not self.player_node and \
                 self.run.rng.random() < 0.30 and dst.alive:
@@ -203,13 +192,9 @@ class ActionsMixin:
             self.graph.remove_edge(e)
         self.stats["cuts"] += 1
         self.run.stats["cuts"] += 1
-        self.fx.add_spark((e.src.x, e.src.y), (dst.x, dst.y), CYAN, 0.3, 3)
-        self.fx.add_parts(dst.x, dst.y, CYAN, 6, 120, 0.35, 1.8)
-        self.fx.add_flash(0.025, CYAN, 12)
-        self.fx.add_hitstop(0.018)
-        self.fx.add_shake(1.8, 8)
+        self.clock.add_hitstop(0.018)
+        self.bus.emit(events.BATTLE_EDGE_CUT, edge=e, dst=dst)
         self.gc_dirty = True
-        audio.play("cut")
         if e.src is self.player_node:
             dst.data["held"] = False
         self.resolve_gc()
@@ -229,19 +214,11 @@ class ActionsMixin:
         self.stats["cuts"] += 1
         self.stats["parries"] = self.stats.get("parries", 0) + 1
         self.run.stats["cuts"] += 1
-        self.fx.add_spark((src.x, src.y) if src else (self.player_node.x,
-                                                      self.player_node.y),
-                          (self.player_node.x, self.player_node.y),
-                          GOLD, 0.32, 4)
-        self.fx.add_ring(self.player_node.x, self.player_node.y,
-                         10, 90, GOLD, 0.4, 3)
-        self.fx.add_text(self.player_node.x, self.player_node.y - 42,
-                         "PARRY", GOLD, 20, 0.9)
-        self.fx.add_flash(0.08, GOLD, 6)
-        self.fx.add_hitstop(0.05)
-        self.fx.slow(0.35, 0.25)
+        self.clock.add_hitstop(0.05)
+        self.clock.slow(0.35, 0.25)
         self.toast("振刀：红色攻击引用被剪断")
-        audio.play("alias")
+        self.bus.emit(events.BATTLE_PARRY, edge=e, src=src,
+                      player=self.player_node)
         return True
 
     def do_link(self, a, b, up=False):
@@ -260,13 +237,9 @@ class ActionsMixin:
         if a is self.player_node:
             b.data["held"] = True
             self.toast(f"持有 {b.name}：它停火，替你分摊 15% 伤害（每多 1 条 +15%，上限 45%）；不占 refcount")
-        self.fx.add_dir_parts(a.x, a.y, math.atan2(b.y - a.y, b.x - a.x),
-                              CYAN, 9, 210, 0.42, 2.0, 0.5)
-        self.fx.add_ring(b.x, b.y, 5, 36, CYAN, 0.35, 2)
-        self.fx.add_flash(0.03, CYAN, 12)
-        self.fx.add_shake(1.0, 10)
+        self.bus.emit(events.BATTLE_LINK, a=a, b=b,
+                      angle=math.atan2(b.y - a.y, b.x - a.x))
         self.gc_dirty = True
-        audio.play("link")
         if up:
             self.work_used = max(0.0, self.work_used - 1)
         return True
@@ -287,22 +260,16 @@ class ActionsMixin:
             if a is self.player_node:
                 b.data["held"] = False
             self.gc_dirty = True
-            ang = math.atan2(b.y - a.y, b.x - a.x)
-            self.fx.add_dir_parts(a.x, a.y, ang, PURPLE, 8, 200, 0.4, 2.0, .5)
-            self.fx.add_ring(b.x, b.y, 6, 34, PURPLE, 0.35, 2)
-            self.fx.add_text(b.x, b.y - b.r - 14, "STRONG→WEAK", PURPLE, 13, 0.8)
-            self.fx.add_shake(1.6, 8)
-            audio.play("weak")
+            self.bus.emit(events.BATTLE_WEAK, a=a, b=b,
+                          angle=math.atan2(b.y - a.y, b.x - a.x),
+                          label="STRONG→WEAK")
             self.resolve_gc()
             return True
         self.graph.add_edge(a, b, WEAK)
         b.data["weak_mark"] = True
-        ang = math.atan2(b.y - a.y, b.x - a.x)
-        self.fx.add_dir_parts(a.x, a.y, ang, PURPLE, 8, 200, 0.4, 2.0, .5)
-        self.fx.add_ring(b.x, b.y, 6, 34, PURPLE, 0.35, 2)
-        self.fx.add_text(b.x, b.y - b.r - 14, "ref+1", PURPLE, 12, 0.75)
-        self.fx.add_shake(1.6, 8)
-        audio.play("weak")
+        self.bus.emit(events.BATTLE_WEAK, a=a, b=b,
+                      angle=math.atan2(b.y - a.y, b.x - a.x),
+                      label="ref+1")
         self.gc_dirty = True
         return True
 
@@ -334,8 +301,7 @@ class ActionsMixin:
             if self.cut_edge(e):
                 cut += 1
         if cut:
-            self.fx.add_ring(point[0], point[1], 10, 170, GREEN, 0.45, 4)
-            self.fx.add_text(point[0], point[1] - 20, f"SWEEP x{cut}", GREEN, 18, 1.0)
+            self.bus.emit(events.BATTLE_SWEEP, point=point, count=cut)
         return cut > 0
 
     def do_weaken_edge(self, e):
@@ -347,9 +313,7 @@ class ActionsMixin:
         e.dst.data["weak_mark"] = True
         if e.src is self.player_node:
             e.dst.data["held"] = False
-        self.fx.add_spark((e.src.x, e.src.y), (e.dst.x, e.dst.y), PURPLE, 0.3, 3)
-        self.fx.add_text(e.dst.x, e.dst.y - e.dst.r - 10, "WEAKEN", PURPLE, 14, 0.9)
-        audio.play("weak")
+        self.bus.emit(events.BATTLE_WEAKEN_EDGE, edge=e)
         self.gc_dirty = True
         self.resolve_gc()
         return True
@@ -364,16 +328,9 @@ class ActionsMixin:
         self.aliases.append(pool)
         if a is self.player_node or b is self.player_node:
             self.alias_pool = pool
-        self.fx.add_ring(a.x, a.y, 6, 48, MAGENTA, 0.45, 3)
-        self.fx.add_ring(b.x, b.y, 6, 48, MAGENTA, 0.45, 3)
         mid = ((a.x + b.x) / 2, (a.y + b.y) / 2)
-        self.fx.add_ring(mid[0], mid[1], 10, 90, MAGENTA, 0.55, 3)
-        self.fx.add_parts(mid[0], mid[1], MAGENTA, 22, 240, 0.6, 2.6)
-        self.fx.add_text(mid[0], mid[1] - 26, "ALIAS", MAGENTA, 18, 1.0)
-        self.fx.add_flash(0.12, MAGENTA, 5)
-        self.fx.add_shake(6, 5)
-        self.fx.add_hitstop(0.06)
-        audio.play("alias")
+        self.clock.add_hitstop(0.06)
+        self.bus.emit(events.BATTLE_ALIAS, a=a, b=b, mid=mid)
         return True
 
     def do_cast(self, n, void=True, up=False):
@@ -389,18 +346,12 @@ class ActionsMixin:
         n.data["cast_disable"] = 3.0 if (void and up) else (2.0 if void else 1.0)
         n.stun = max(n.stun, 3.0 if (void and up) else (2.0 if void else 1.0))
         color = WHITE if void else AMBER
-        self.fx.add_ring(n.x, n.y, n.r * 0.5, n.r * 2.4, color, 0.5, 3)
-        self.fx.add_flash(0.05, color, 9)
-        self.fx.add_hitstop(0.02)
-        self.fx.add_shake(2.2, 8)
-        self.fx.add_parts(n.x, n.y, color, 14, 170, 0.5, 2.0)
-        self.fx.add_text(n.x, n.y - n.r - 16,
-                         "CAST<void>" if void else "CAST<int>", color, 15, 1.1)
+        self.clock.add_hitstop(0.02)
+        self.bus.emit(events.BATTLE_CAST, node=n, void=void, color=color)
         if not void:
             self.explode(n.x, n.y, 120, 50 if up else 34, AMBER, hit_player=False)
         if stripped:
             self.toast("析构器/类型免疫已被剥离")
-        audio.play("cast")
         return True
 
     def do_reflect(self, e, dmg):
@@ -415,7 +366,8 @@ class ActionsMixin:
         targets.sort(key=lambda n: vdist(n.x, n.y, pos[0], pos[1]))
         if targets:
             self.apply_damage(targets[0], dmg, GOLD, source="reflect")
-            self.fx.add_spark(pos, (targets[0].x, targets[0].y), GOLD, 0.4, 3)
+            self.bus.emit(events.BATTLE_REFLECT, start=pos,
+                          end=(targets[0].x, targets[0].y))
         return True
 
     def do_steal(self, e, up=False):
@@ -433,12 +385,10 @@ class ActionsMixin:
         self.graph.remove_edge(e)
         self.graph.add_edge(self.player_node, dst, STRONG)
         dst.data["held"] = True
-        self.fx.add_spark((e.src.x, e.src.y), (dst.x, dst.y), GREEN, 0.35, 3)
-        self.fx.add_text(dst.x, dst.y - dst.r - 12, "STOLEN", GREEN, 15, 1.1)
         if up:
             self.work_used = max(0.0, self.work_used - 1)
         self.toast("引用窃取：它现在归你持有")
-        audio.play("hijack")
+        self.bus.emit(events.BATTLE_STEAL, edge=e, dst=dst)
         self.gc_dirty = True
         return True
 
@@ -449,12 +399,8 @@ class ActionsMixin:
             return False
         self.work_used = max(self.work_used, free * (0.9 if not up else 0.95))
         self.compress_t = 12.0 if (up or self.run.has("compressor")) else 8.0
-        self.fx.add_flash(0.15, RED, 5)
-        self.fx.add_glitch(0.35)
-        self.fx.add_text(self.player_node.x, self.player_node.y - 42,
-                         "COMPRESS +30%", RED, 18, 1.2)
         self.toast("压缩：工作内存拉到 90%，伤害提升，画质正在掉")
-        audio.play("glitch")
+        self.bus.emit(events.BATTLE_COMPRESS, player=self.player_node)
         return True
 
     def do_ecc(self, n):
@@ -474,14 +420,11 @@ class ActionsMixin:
         for cell in dead:
             if cell not in cells:
                 cells.append(cell)
+        fixed = min(n, len(cells))
         for cell in cells[:n]:
             self.deck.grid.dead.discard(cell)
-            self.fx.add_parts(self.player_node.x, self.player_node.y,
-                              GREEN, 12, 160, 0.6, 2.0)
-        self.fx.add_ring(self.player_node.x, self.player_node.y, 8, 80,
-                         GREEN, 0.5, 3)
-        self.toast(f"纠错码：修复 {min(n, len(cells))} 个坏死格")
-        audio.play("clear")
+        self.toast(f"纠错码：修复 {fixed} 个坏死格")
+        self.bus.emit(events.BATTLE_ECC, player=self.player_node, count=fixed)
         return True
 
     # ================================================================ 伤害

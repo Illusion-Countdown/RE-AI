@@ -204,7 +204,8 @@ payload：source_id, x, y, child_count
 6. PR 合并后关子 Issue；
    所有子 Issue 关闭后，关父 Issue。
 
-7. 代码合并后，由父 Issue Owner 或最后一个合并的子任务 Owner 给 D 开文档 Issue；
+7. 代码合并后，由父 Issue Owner 给 D 开文档 Issue；
+   单点需求由代码作者开；父 Owner 不在时，由最后一个合并的子任务 Owner 兜底。
    Lead 只在没人持有父 Issue 或跨多个父任务时兜底，不默认代写。
 ```
 
@@ -251,10 +252,11 @@ Parent: #父
 
 代码 PR 合并后再开 D 的文档 Issue。
 
-**谁开：父 Issue Owner 或最后一个合并的子任务 Owner。Lead 不默认代写。**
+**谁开：优先父 Issue Owner。Lead 不默认代写。**
 
-- 写代码的人最清楚改了什么、哪些行为变了，D Issue 由他们开最准确。
-- 多个子 PR 时，由父 Issue Owner 汇总成**一个** D Issue，不要每个子 PR 各开一个。
+- 有父 Issue：父 Owner 在所有子 PR 合并后，汇总成**一个** D Issue，不要每个子 PR 各开一个。
+- 单点需求（无父 Issue）：由代码作者开。
+- 父 Owner 不在：由最后一个合并的子任务 Owner 兜底。
 - Lead 只在两种情况下兜底：父 Issue 没人持有，或这次改动跨多个父 Issue、需要统一收口。
 - 如果文档必须和代码同一个 PR 合并，就把 D 作为**合并前**的子 Issue，而不是合并后补。
 
@@ -305,7 +307,7 @@ Assignee: D
 [ ] 事件名按规范自助注册，没有为名字 @lead
 [ ] 只有公共接口/事件总线/跨 Owner 决策才 @lead
 [ ] 一个子 Issue 一个目录一个 PR
-[ ] 代码 PR 合并后，由父 Issue Owner/代码作者创建 D 文档 Issue，不推给 Lead 代写
+[ ] 代码 PR 合并后，由父 Issue Owner 创建 D 文档 Issue；单点需求由代码作者开，不推给 Lead 代写
 [ ] 不自行合并 PR
 ```
 

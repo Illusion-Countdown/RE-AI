@@ -13,6 +13,7 @@ class BattleAudio:
             (events.BATTLE_CARD_CAST, self._select),
             (events.BATTLE_CARD_RELEASED, self._select),
             (events.BATTLE_EDGE_CUT, self._cut),
+            (events.BATTLE_EDGE_BARRIER, self._weak),
             (events.BATTLE_PARRY, self._alias),
             (events.BATTLE_LINK, self._link),
             (events.BATTLE_WEAK, self._weak),
@@ -85,6 +86,8 @@ class BattleAudio:
         audio.play("gcstart")
 
     def _hurt(self, p):
+        if p.get("mode") == "alias":
+            return
         audio.play("hurt")
 
     def _dash(self, p):

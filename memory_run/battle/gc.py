@@ -14,7 +14,7 @@ class GcMixin:
         if n.data.get("boss") == "gc" and any(
                 p.alive and p.kind == "PYLON" for p in self.graph.nodes):
             self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg,
-                          color=DIM, mode="immune")
+                          color=DIM, mode="immune", shielded=False)
             return
         shielded = False
         if n.data.get("boss") == "auditor" and self.quality() < 75.0:
@@ -27,7 +27,7 @@ class GcMixin:
             pool.sync()
             n.hit_flash = 1.0
             self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg,
-                          color=color, mode="alias")
+                          color=color, mode="alias", shielded=shielded)
             if pool.hp <= 0:
                 self.kill_pool(pool)
             return
@@ -36,7 +36,8 @@ class GcMixin:
         self.stats["dmg"] += dmg
         self.run.stats["dmg"] += dmg
         self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg, color=color,
-                      mode="shielded" if shielded else "normal")
+                      mode="shielded" if shielded else "normal",
+                      shielded=shielded)
         if n.hp <= 0:
             self.kill_node(n, source=source)
 
@@ -53,6 +54,19 @@ class GcMixin:
                 self.kill_node(m, source="alias")
         self.bus.emit(events.BATTLE_ALIAS_POOL_KILLED)
 
+    def _queue_destructor(self, n, x, y, kind):
+        """析构器统一入口：普通死亡和 GC 都必须走异常捕获判定。"""
+        dtor = (n.data.get("destructor") and
+                not n.data.get("cast_stripped")) or kind == "BOMB"
+        if not dtor:
+            return
+        if self.run.has("exception") and not self.exception_used:
+            self.exception_used = True
+            self.pending_explosions.append((x, y, 150, 0, "exception"))
+            self.toast("异常捕获：第一次析构伤害被吃掉")
+        else:
+            self.pending_explosions.append((x, y, 160, 26, "dtor"))
+
     def kill_node(self, n, source=None):
         if n is None or not n.alive:
             return
@@ -60,15 +74,7 @@ class GcMixin:
             self.die("self")
             return
         x, y, kind = n.x, n.y, n.kind
-        dtor = (n.data.get("destructor") and
-                not n.data.get("cast_stripped")) or kind == "BOMB"
-        if dtor:
-            if self.run.has("exception") and not self.exception_used:
-                self.exception_used = True
-                self.pending_explosions.append((x, y, 150, 0, "exception"))
-                self.toast("异常捕获：第一次析构伤害被吃掉")
-            else:
-                self.pending_explosions.append((x, y, 160, 26, "dtor"))
+        self._queue_destructor(n, x, y, kind)
         self.graph.remove_node(n)
         self.clock.add_hitstop(0.015)
         if n.data.get("boss"):
@@ -200,10 +206,7 @@ class GcMixin:
     def gc_erase(self, n):
         x, y, kind = n.x, n.y, n.kind
         count, max_depth = self.graph.subtree_stats(n)
-        dtor = (n.data.get("destructor") and
-                not n.data.get("cast_stripped")) or kind == "BOMB"
-        if dtor:
-            self.pending_explosions.append((x, y, 160, 26, "dtor"))
+        self._queue_destructor(n, x, y, kind)
         self.graph.remove_node(n)
         self.apply_shockwave(n, count, max_depth)
         self.clock.add_hitstop(0.012)

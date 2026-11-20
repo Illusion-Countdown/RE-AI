@@ -1,7 +1,7 @@
 # 战斗事件 payload 契约
 
 > 事件名注册在 `memory_run/events.py`；本文只列 payload。
-> 事件同步派发，监听方按订阅顺序执行；payload 只读，不要改战斗状态或长期持有。
+> 事件同步派发，监听方按订阅顺序执行；payload 及节点/边引用只读，不要改战斗状态或长期持有。
 
 ## 1. 手牌与卡牌动作
 
@@ -35,7 +35,7 @@
 | 事件 | payload |
 |---|---|
 | `BATTLE_EXPLODE` | `x, y, radius, color, dud` |
-| `BATTLE_DAMAGE` | `node, dmg, color, mode` |
+| `BATTLE_DAMAGE` | `node, dmg, color, mode, shielded` |
 | `BATTLE_NODE_KILLED` | `node, source` |
 | `BATTLE_ALIAS_POOL_KILLED` | 无 |
 | `BATTLE_SCORE` | `node, score` |
@@ -47,6 +47,8 @@
 | `BATTLE_ALIAS_EXPIRED` | `player` |
 
 `BATTLE_DAMAGE.mode`：`normal` / `alias` / `immune` / `shielded`。
+
+`BATTLE_DAMAGE.shielded`：是否先显示 `SHIELD`；ALIAS 打在有护盾的 Boss 上时也会为真。
 
 `BATTLE_EXPLODE.dud`：`True` 表示只有绿色冲击环和 weak 音效。
 

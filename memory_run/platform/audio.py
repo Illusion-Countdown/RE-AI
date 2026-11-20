@@ -46,12 +46,14 @@ def next_device():
     for _ in range(len(names)):
         _dev_idx = (_dev_idx + 1) % len(names)
         try:
-            _reinit(names[_dev_idx])
-            _devices = names
-            return names[_dev_idx]
+            if _reinit(names[_dev_idx]):
+                _devices = names
+                return names[_dev_idx]
         except Exception:
             continue
-    _reinit(None)
+    # 命名设备都失败时回退默认设备；真的出声了就返回可见提示。
+    if _reinit(None):
+        return "默认音频设备"
     return None
 
 
@@ -132,8 +134,8 @@ def _reinit(devicename=None):
         {},
     ]
     if devicename:
-        base = [{"frequency": SR, "size": -16, "channels": 2,
-                 "buffer": 512, "devicename": devicename}]
+        # 有些设备只接受 48k/单声道；命名设备也要遍历全部格式再放弃。
+        base = [dict(kw, devicename=devicename) for kw in base]
     for kw in base:
         try:
             try:

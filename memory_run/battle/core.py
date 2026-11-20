@@ -50,6 +50,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.crash_t = 0.0
         self.redundancy_t = 0.0
         self.compress_t = 0.0
+        self.compress_up = False
         self.slow_t = 0.0
         self.erase_streak = 0
         self.streak_t = 0.0
@@ -239,7 +240,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         q = self.quality()
         m = 1.0 + self.deck.quality_bonus(q)
         if self.compress_t > 0:
-            m += 0.30
+            m += 0.40 if self.compress_up else 0.30
         if self.run.has("overload") and q < 50:
             m += 0.15
         per = 0.02 if self.run.has("cascade_bonus") else 0.01

@@ -11,6 +11,7 @@
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 - [`docs/COLLABORATION.md`](docs/COLLABORATION.md)（创建/修改 Issue、父子任务、@ 通知时必读）
 - [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md)（涉及事件名时必读）
+- [`docs/BATTLE_EVENTS.md`](docs/BATTLE_EVENTS.md)（修改战斗事件 payload 时必读）
 - [`docs/LABELS.md`](docs/LABELS.md)（涉及 Issue / PR 标签时必读）
 
 不要凭记忆猜仓库结构、测试命令或标签含义。

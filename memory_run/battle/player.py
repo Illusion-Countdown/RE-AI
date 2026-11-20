@@ -41,11 +41,10 @@ class PlayerMixin:
             d = math.hypot(dx, dy) or 1
             self.player_node.x += dx / d * 150
             self.player_node.y += dy / d * 150
-            self.fx.add_spark((self.player_node.x - dx / d * 140,
-                               self.player_node.y - dy / d * 140),
-                              (self.player_node.x, self.player_node.y), CYAN, 0.3, 4)
-            self.fx.add_ring(self.player_node.x, self.player_node.y, 8, 40, CYAN, 0.3, 2)
-            audio.play("dash")
+            self.bus.emit(events.BATTLE_DASH, player=self.player_node,
+                          start=(self.player_node.x - dx / d * 140,
+                                 self.player_node.y - dy / d * 140),
+                          end=(self.player_node.x, self.player_node.y))
         self.player_node.x = clamp(self.player_node.x, PLAY.x + 16, PLAY.right - 16)
         self.player_node.y = clamp(self.player_node.y, PLAY.y + 16, PLAY.bottom - 16)
         # 玩家不能穿过敌人
@@ -110,7 +109,7 @@ class PlayerMixin:
             self.run.mark_redundancy()
             self.redundancy_t = 2.0
             self.work_used = max(0.0, self.work_used - 1)
-            self.fx.add_flash(0.2, GREEN, 4)
+            self.bus.emit(events.BATTLE_REDUNDANCY, player=self.player_node)
             self.toast("冗余校验：画质从崩溃边缘被拉回 50%")
 
     def update_pending(self, dt):
@@ -129,8 +128,8 @@ class PlayerMixin:
                 self.aliases.remove(pool)
                 if pool is self.alias_pool:
                     self.alias_pool = None
-                self.fx.add_text(self.player_node.x, self.player_node.y - 30,
-                                 "ALIAS EXPIRED", MAGENTA, 13, 0.8)
+                self.bus.emit(events.BATTLE_ALIAS_EXPIRED,
+                              player=self.player_node)
 
     # ================================================================ 玩家受伤
 
@@ -151,8 +150,8 @@ class PlayerMixin:
             self.alias_pool.hp -= taken
             self.alias_pool.sync()
             self.hp = max(0.0, self.alias_pool.hp)
-            self.fx.add_text(self.player_node.x, self.player_node.y - 30,
-                             f"-{int(taken)}", RED, 17, 0.7)
+            self.bus.emit(events.BATTLE_PLAYER_HURT, player=self.player_node,
+                          dmg=taken, linked=False, share=0.0, mode="alias")
             if self.alias_pool.hp <= 0:
                 self.kill_pool(self.alias_pool)
             return
@@ -161,14 +160,8 @@ class PlayerMixin:
         self.run.note_damage()
         self.iframe = 0.7
         self.hurt_flash = 1.0
-        self.fx.add_flash(0.10, RED, 6)
-        self.fx.add_shake(5, 6)
-        self.fx.add_text(self.player_node.x, self.player_node.y - 34,
-                         f"-{int(taken)}", RED, 17, 0.8)
-        if linked:
-            self.fx.add_text(self.player_node.x, self.player_node.y - 52,
-                             f"HOLD -{int(share * 100)}%", CYAN, 11, 0.6)
-        audio.play("hurt")
+        self.bus.emit(events.BATTLE_PLAYER_HURT, player=self.player_node,
+                      dmg=taken, linked=bool(linked), share=share, mode="normal")
         if self.hp <= 0:
             self.die("hp")
 
@@ -180,14 +173,9 @@ class PlayerMixin:
         self.end_t = 1.6
         self.hp = 0
         self.run.hp = 0
-        self.fx.add_flash(0.55, (255, 40, 50), 2.2)
-        self.fx.add_glitch(1.2)
-        self.fx.add_shake(20, 2.2)
-        self.fx.add_hitstop(0.16)
-        self.fx.add_text(self.player_node.x, self.player_node.y - 60,
-                         "SEGFAULT" if reason == "hp" else "RENDER CRASH",
-                         RED, 34, 2.0)
-        audio.play("death")
+        self.clock.add_hitstop(0.16)
+        self.bus.emit(events.BATTLE_PLAYER_DIED, player=self.player_node,
+                      reason=reason)
 
     # ================================================================ WRITE
 
@@ -212,8 +200,8 @@ class PlayerMixin:
                 best = n
                 bestd = d
         tx, ty = (best.x, best.y) if best else (mx, my)
-        self.fx.add_spark((px, py), (tx, ty), CYAN, 0.18, 3)
-        self.fx.add_parts((px + tx) / 2, (py + ty) / 2, CYAN, 4, 90, 0.25, 1.5)
+        self.bus.emit(events.BATTLE_WRITE, player=self.player_node,
+                      start=(px, py), end=(tx, ty))
         if best:
             dmg = 16.0 * self.damage_mult()
             if self.run.has("inline"):
@@ -223,9 +211,8 @@ class PlayerMixin:
             if self.run.has("wreck"):
                 dmg *= 1.0 + min(0.30, len(self.deck.grid.dead) * 0.03)
             self.apply_damage(best, dmg, CYAN, source="inline" if self.run.has("inline") else "write")
-            self.fx.add_flash(0.018, CYAN, 16)
-            self.fx.add_hitstop(0.012)
-            self.fx.add_shake(1.8, 10)
-        audio.play("write")
+            self.clock.add_hitstop(0.012)
+        self.bus.emit(events.BATTLE_WRITE_HIT, player=self.player_node,
+                      start=(px, py), end=(tx, ty), hit=bool(best))
 
     # ================================================================ 敌人

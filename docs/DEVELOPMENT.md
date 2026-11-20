@@ -13,10 +13,11 @@ RE-AI/
 │  ├─ core/          Node / Edge / Graph / Card / Grid / Hand
 │  ├─ content/       身体、AI 娘、模块、Boss 规则、卡牌、房间、奖励池
 │  ├─ run/           远征状态、经济、商店
-│  ├─ battle/        core / input / actions / gc / player / enemies
-│  ├─ ui/            app / render_* / screens / deckui / fx
-│  └─ platform/      程序化音频
-├─ tools/            架构、机制、房间、流程、教程、界面、拖拽、音频测试
+│  ├─ battle/        core / input / actions / gc / player / enemies / clock
+│  ├─ ui/            app / render_* / screens / deckui / fx / battle_fx
+│  ├─ platform/      程序化音频 / audio_feedback
+│  └─ events.py      事件名注册表 + 每场战斗独立的 EventBus
+├─ tools/            架构、事件、接线、机制、房间、流程、教程、界面、拖拽、音频测试
 ├─ docs/             本目录
 ├─ screenshots/
 ├─ run.py
@@ -87,7 +88,7 @@ python tools/architecture_test.py
 | `ui/screens.py` / `ui/deckui.py` | C | 界面、整备、商店 |
 | `ui/fx.py` | C | 屏幕 FX |
 | `platform/audio.py` | D | 音频、设备切换 |
-| `memory_run/events.py` | 公共注册表 | 任何人可加事件名；Lead 只审格式/重复 |
+| `memory_run/events.py` | 公共注册表 + 总线 | 任何人可加事件名；Lead 只审格式/重复 |
 | `tools/*` | D | 测试、回归、性能 |
 | `docs/*` | D 汇总 | Owner 提供内容 |
 
@@ -158,6 +159,8 @@ battle.state
 battle.quality
 battle.quality_band()
 battle.deck
+battle.clock       # 只读时间控制：hitstop / slow / time_scale
+battle.fx          # 渲染层只读 FX 句柄
 ```
 
 UI 不能直接改 `node.hp`、`edge.kind`、`graph.nodes`。
@@ -174,6 +177,12 @@ battle.select_reserve(i)
 battle.select_overflow(i)
 battle.drop_card_at(pos)
 battle.use_card(card, where, target=None)
+```
+
+构造：
+
+```python
+Battle(run, fx, bus=None)   # App 传入每场战斗独立的 EventBus
 ```
 
 ### 内容 schema
@@ -213,7 +222,16 @@ audio.toggle_mute()
 audio.next_device()
 ```
 
-音效名必须先注册在 `platform/audio.py`。
+`battle/` **不直接调用 FX / audio**。战斗只发事件：
+
+```text
+battle/*.py
+   └─ Battle.bus.emit(events.XXX, ...)
+        ├─ ui/battle_fx.py       → FX.add_*
+        └─ platform/audio_feedback.py → audio.play(...)
+```
+
+音效 cue 名仍注册在 `platform/audio.py`；事件到 cue 的映射在 `audio_feedback.py`。
 
 ### 事件 / Events
 
@@ -223,18 +241,42 @@ audio.next_device()
 memory_run/events.py
 ```
 
+当前已注册 50+ 个 `BATTLE_*` 事件，事件总线是 `events.EventBus`。
+payload 契约见 [`BATTLE_EVENTS.md`](BATTLE_EVENTS.md)。
+
 规则见 [`EVENT_NAMING.md`](EVENT_NAMING.md)：
 
 - 格式 `DOMAIN_ACTION[_STATE]`，全大写，2–5 段
 - 常量名与字符串值完全一致
 - 同一个 PR 里注册并使用，不预埋空事件
 - 业务模块只使用 `events.XXX`，不写裸字符串
-- 当前还没有事件总线，注册表暂时为空；第一个跨层事件再按规范接线
+- 事件是同步的：`emit` 当场按订阅顺序调用监听方，保证和旧直接调用同一帧
+- payload 是只读快照；监听方不改战斗状态、不长期持有
+- 总线按战斗创建，不全局复用；避免跨房间订阅泄漏
+- 事件只承载表现/音频/反馈，不承载伤害、GC、卡牌结算等确定性规则
+
+装配位置：
+
+```python
+# ui/app.py::start_battle
+fx = FX()
+bus = EventBus()
+BattleFx(bus, fx)       # C
+BattleAudio(bus)        # D
+battle = Battle(run, fx, bus)
+```
+
+性能边界：
+
+- 只在动作/伤害/GC 等离散时刻 `emit`，不是每帧同步整张图
+- UI 仍然每帧只读 `battle.graph` / `battle.player_node`，不做事件快照复制
+- `BattleClock` 把顿帧/慢放从 FX 中拆出，Battle 只依赖窄接口
 
 检查：
 
 ```powershell
 python tools/events_test.py
+python tools/feedback_test.py
 ```
 
 ---
@@ -297,6 +339,7 @@ python tools/run_all.py
 
 - 分层依赖
 - 事件命名与注册表
+- 事件总线、监听器接线与旧表现等价
 - 机制
 - 18 关清场
 - 教程
@@ -309,6 +352,7 @@ python tools/run_all.py
 
 ```powershell
 python tools/events_test.py
+python tools/feedback_test.py
 python tools/mechanics_test.py
 python tools/rooms_test.py
 python tools/screens_test.py

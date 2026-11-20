@@ -9,9 +9,12 @@ import traceback
 import pygame
 
 from memory_run.const import *
+from memory_run.events import EventBus
 from memory_run.platform import audio
+from memory_run.platform.audio_feedback import BattleAudio
 from memory_run.core.cards import CARD_DEFS
 from memory_run.content import TUTORIAL_COUNT, RUN_ROOMS
+from memory_run.ui.battle_fx import BattleFx
 from memory_run.ui.fx import FX
 from memory_run.run.runstate import RunState
 from memory_run.battle.battle import Battle
@@ -88,7 +91,12 @@ class App:
             self.end_run(True)
             return
         self.run.begin_room()
-        self.battle = Battle(self.run, FX())
+        fx = FX()
+        bus = EventBus()
+        # 先接监听器再构造 Battle，确保 DECK ONLINE 等开局事件不会漏掉。
+        BattleFx(bus, fx)
+        BattleAudio(bus)
+        self.battle = Battle(self.run, fx, bus)
         self.state = "battle"
         self._finished_handled = False
         self.result = None
@@ -526,7 +534,7 @@ class App:
             self.notice_t -= dt
         if self.state == "battle" and self.battle:
             b = self.battle
-            if not (b.state == "playing" and b.fx.hitstop > 0):
+            if not (b.state == "playing" and b.clock.hitstop > 0):
                 b.fx.update(dt)
             inp = self.make_input()
             b.update(dt, inp)

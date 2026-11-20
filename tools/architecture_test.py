@@ -14,8 +14,9 @@ ALLOWED = {
     "content": ("memory_run.const", "memory_run.content"),
     "run": ("memory_run.const", "memory_run.core", "memory_run.content", "memory_run.run"),
     "battle": ("memory_run.const", "memory_run.core", "memory_run.content",
-               "memory_run.run", "memory_run.platform", "memory_run.battle"),
-    "platform": ("memory_run.const", "memory_run.platform"),
+               "memory_run.run", "memory_run.platform", "memory_run.battle",
+               "memory_run.events"),
+    "platform": ("memory_run.const", "memory_run.events", "memory_run.platform"),
     "ui": ("memory_run",),
 }
 
@@ -33,7 +34,10 @@ def imported_names(path):
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             mod = node.module or ""
-            if mod.startswith("memory_run"):
+            if mod == "memory_run":
+                for alias in node.names:
+                    yield "memory_run." + alias.name
+            elif mod.startswith("memory_run"):
                 yield mod
         elif isinstance(node, ast.Import):
             for alias in node.names:

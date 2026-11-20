@@ -13,18 +13,21 @@ class GcMixin:
             dmg *= 0.55
         if n.data.get("boss") == "gc" and any(
                 p.alive and p.kind == "PYLON" for p in self.graph.nodes):
-            self.fx.add_text(n.x, n.y - n.r - 14, "IMMUNE", DIM, 14, 0.7)
+            self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg,
+                          color=DIM, mode="immune")
             return
+        shielded = False
         if n.data.get("boss") == "auditor" and self.quality() < 75.0:
             q = self.quality()
             dmg *= max(0.2, 1.0 - (75.0 - q) * 0.04)
-            self.fx.add_text(n.x, n.y - n.r - 14, "SHIELD", AMBER, 14, 0.6)
+            shielded = True
         if n.alias:
             pool = n.alias
             pool.hp -= dmg
             pool.sync()
             n.hit_flash = 1.0
-            self.fx.add_text(n.x, n.y - n.r, f"-{int(dmg)}", color, 15, 0.6)
+            self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg,
+                          color=color, mode="alias")
             if pool.hp <= 0:
                 self.kill_pool(pool)
             return
@@ -32,8 +35,8 @@ class GcMixin:
         n.hit_flash = 1.0
         self.stats["dmg"] += dmg
         self.run.stats["dmg"] += dmg
-        self.fx.add_text(n.x, n.y - n.r, f"-{int(dmg)}", color, 15, 0.6)
-        self.fx.add_parts(n.x, n.y, color, 5, 110, 0.3, 1.6)
+        self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg, color=color,
+                      mode="shielded" if shielded else "normal")
         if n.hp <= 0:
             self.kill_node(n, source=source)
 
@@ -48,9 +51,7 @@ class GcMixin:
                 self.die("alias")
             elif m.alive:
                 self.kill_node(m, source="alias")
-        self.fx.add_flash(0.35, MAGENTA, 3)
-        self.fx.add_glitch(0.5)
-        audio.play("death")
+        self.bus.emit(events.BATTLE_ALIAS_POOL_KILLED)
 
     def kill_node(self, n, source=None):
         if n is None or not n.alive:
@@ -69,20 +70,15 @@ class GcMixin:
             else:
                 self.pending_explosions.append((x, y, 160, 26, "dtor"))
         self.graph.remove_node(n)
-        self.fx.add_parts(x, y, NODE_COLOR.get(kind, WHITE), 12, 160, 0.5, 2.0)
-        self.fx.add_ring(x, y, 6, 46, NODE_COLOR.get(kind, WHITE), 0.35, 2)
-        self.fx.add_flash(0.03, NODE_COLOR.get(kind, WHITE), 12)
-        self.fx.add_hitstop(0.015)
-        self.fx.add_shake(2.0, 8)
+        self.clock.add_hitstop(0.015)
         if n.data.get("boss"):
-            self.fx.slow(0.28, 0.9)
-            self.fx.add_flash(0.28, WHITE, 3)
-            self.fx.add_shake(16, 2.5)
+            self.clock.slow(0.28, 0.9)
+        self.bus.emit(events.BATTLE_NODE_KILLED, node=n, source=source)
         self.note_erase(n, source)
         if source in ("write", "lossy") and not self.run.has("inline") and \
                 (n.data.get("boss") or n.max_hp >= 100 or self.run.rng.random() < 0.15):
             if self.run.add_dead_cells(1):
-                self.fx.add_text(x, y - 20, "LEAK", DIM, 14, 1.0)
+                self.bus.emit(events.BATTLE_LEAK, node=n)
         self.gc_dirty = True
         self.resolve_gc()
 
@@ -93,32 +89,24 @@ class GcMixin:
         self.stats["gc"] += 1
         score = 60 * self.erase_streak
         self.run.score += score
-        self.fx.add_text(n.x + 18, n.y, f"+{score}", GREEN, 13, 0.7)
+        self.bus.emit(events.BATTLE_SCORE, node=n, score=score)
         if self.erase_streak >= 3 and 3 not in self.cascade_marks:
             self.cascade_marks.add(3)
             self.work_used = max(0.0, self.work_used - 1)
             self.run.shards += 1
-            self.fx.add_text(self.player_node.x, self.player_node.y - 44,
-                             "CASCADE x3  工作内存 +1", GREEN, 18, 1.2)
-            audio.play("clear")
+            self.bus.emit(events.BATTLE_CASCADE, tier=3, player=self.player_node)
         if self.erase_streak >= 5 and 5 not in self.cascade_marks:
             self.cascade_marks.add(5)
             self.work_used = max(0.0, self.work_used - 2)
             self.draw_one()
-            self.fx.add_text(self.player_node.x, self.player_node.y - 44,
-                             "CASCADE x5  抽 1 张", GREEN, 19, 1.3)
-            audio.play("clear")
+            self.bus.emit(events.BATTLE_CASCADE, tier=5, player=self.player_node)
         if self.erase_streak >= 8 and 8 not in self.cascade_marks:
             self.cascade_marks.add(8)
             self.run.shards += 2
             self.gc_dirty = True
             self.extra_gc = True
-            self.fx.add_flash(0.3, GREEN, 4)
-            self.fx.add_glitch(0.8)
-            self.fx.slow(0.35, 0.55)
-            self.fx.add_text(self.player_node.x, self.player_node.y - 50,
-                             "CASCADE x8  免费 GC", GREEN, 22, 1.5)
-            audio.play("hijack")
+            self.clock.slow(0.35, 0.55)
+            self.bus.emit(events.BATTLE_CASCADE, tier=8, player=self.player_node)
 
     def explode(self, x, y, rad, dmg, color=GOLD, hit_player=True):
         hit = set()
@@ -137,10 +125,8 @@ class GcMixin:
             d = vdist(self.player_node.x, self.player_node.y, x, y)
             if d <= rad:
                 self.damage_player(dmg * 0.25 * (1 - d / rad), force=True)
-        self.fx.add_ring(x, y, 10, rad, color, 0.55, 5)
-        self.fx.add_parts(x, y, color, 28, 280, 0.7, 2.6)
-        self.fx.add_flash(0.25, color, 3)
-        self.fx.add_shake(8, 4)
+        self.bus.emit(events.BATTLE_EXPLODE, x=x, y=y, radius=rad,
+                      color=color, dud=False)
 
     def flush_explosions(self):
         while self.pending_explosions:
@@ -148,8 +134,8 @@ class GcMixin:
             if dmg > 0:
                 self.explode(x, y, rad, dmg, GOLD)
             else:
-                self.fx.add_ring(x, y, 10, rad, GREEN, 0.4, 3)
-                audio.play("weak")
+                self.bus.emit(events.BATTLE_EXPLODE, x=x, y=y, radius=rad,
+                              color=GREEN, dud=True)
 
     def shock_radius(self, n, count, max_depth):
         """按当前子树大小和深度缩放；清掉子节点后半径会下降。"""
@@ -167,23 +153,15 @@ class GcMixin:
         dist = vdist(n.x, n.y, self.player_node.x, self.player_node.y)
         color = WHITE if radius > 500 else CYAN
         # GC 环本身就是冲击波：从节点半径扩到冲击半径
-        self.fx.add_ring(n.x, n.y, max(6.0, n.r * 0.5), radius,
-                         color, 0.55, 4)
-        self.fx.add_ring(n.x, n.y, max(4.0, n.r * 0.35), radius * 0.72,
-                         color, 0.40, 2)
-        if radius > 360:
-            self.fx.add_flash(0.06, color, 5)
-            self.fx.add_shake(7, 4)
+        self.bus.emit(events.BATTLE_GC_SHOCKWAVE, node=n, radius=radius,
+                      color=color, big=radius > 360)
         if self.state != "playing" or dist > radius:
             return
         dmg = self.shock_damage(count, max_depth, dist, radius)
         self.damage_player(dmg, force=True)
-        added = self.run.add_dead_cells(1)
-        if added:
-            self.fx.add_text(self.player_node.x, self.player_node.y - 48,
-                             "CORRUPT", MAGENTA, 14, 1.0)
-        self.fx.add_text(self.player_node.x, self.player_node.y - 34,
-                         f"SHOCK -{int(dmg)}", color, 15, 0.7)
+        added = bool(self.run.add_dead_cells(1))
+        self.bus.emit(events.BATTLE_SHOCK_HIT, player=self.player_node,
+                      dmg=dmg, color=color, corrupt=added)
 
     def resolve_gc(self):
         if not self.gc_dirty:
@@ -228,12 +206,8 @@ class GcMixin:
             self.pending_explosions.append((x, y, 160, 26, "dtor"))
         self.graph.remove_node(n)
         self.apply_shockwave(n, count, max_depth)
-        self.fx.add_parts(x, y, CYAN, 10, 130, 0.5, 1.8)
-        self.fx.add_text(x, y - n.r - 14, "GC", CYAN, 14, 0.8)
-        self.fx.add_flash(0.025, CYAN, 14)
-        self.fx.add_hitstop(0.012)
-        self.fx.add_shake(3, 6)
-        audio.play("gc")
+        self.clock.add_hitstop(0.012)
+        self.bus.emit(events.BATTLE_GC_ERASED, node=n)
         self.note_erase(n, source="gc")
         self.gc_dirty = True
 
@@ -248,10 +222,6 @@ class GcMixin:
         self.ending = "clear"
         self.end_t = 1.8
         self.aim = None
-        self.fx.add_flash(0.35, GREEN, 2.4)
-        self.fx.add_glitch(0.25)
-        self.fx.add_text(self.player_node.x, self.player_node.y - 70,
-                         "ROOM CLEARED", GREEN, 30, 2.0)
-        audio.play("clear")
+        self.bus.emit(events.BATTLE_ROOM_CLEAR, player=self.player_node)
 
     # ================================================================ 战斗更新

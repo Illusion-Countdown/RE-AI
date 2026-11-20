@@ -74,8 +74,7 @@ class EnemiesMixin:
         self.by_id[f"wave{self.wave_left}"] = e
         self.wave_left -= 1
         self.toast("敌方支援到位：SENTINEL 加入编队", 1.6)
-        self.fx.add_shake(2.0, 8)
-        self.fx.add_ring(x, y, 6, 50, AMBER, 0.45, 2)
+        self.bus.emit(events.BATTLE_REINFORCEMENT, x=x, y=y)
 
     def update_waves(self, dt):
         if self.state != "playing" or self.wave_left <= 0:
@@ -130,10 +129,7 @@ class EnemiesMixin:
                         allies.sort(key=lambda x: vdist(n.x, n.y, x.x, x.y))
                         t = allies[0]
                         t.data["shield_t"] = 4.0
-                        self.fx.add_ring(t.x, t.y, t.r + 4, t.r + 26,
-                                         BLUE, 0.4, 2)
-                        self.fx.add_text(t.x, t.y - t.r - 12, "WARD",
-                                         BLUE, 10, 0.5)
+                        self.bus.emit(events.BATTLE_WARD, target=t)
             elif n.kind == "KERNEL":
                 self.enemy_attack(n, dt, 2.0, 230, 6.0, CYAN)
             elif n.kind == "BOMB":
@@ -166,12 +162,8 @@ class EnemiesMixin:
                 n.data["attack_edge"] = None
                 if self.state == "playing":
                     self.damage_player(n.data.get("melee_dmg", dmg), force=True)
-                    self.fx.add_spark((n.x, n.y),
-                                      (self.player_node.x, self.player_node.y),
-                                      RED, 0.28, 4)
-                    self.fx.add_flash(0.05, RED, 8)
-                    self.fx.add_shake(5, 6)
-                    audio.play("hurt")
+                    self.bus.emit(events.BATTLE_MELEE_HIT, node=n,
+                                  player=self.player_node)
             return
         n.data["attack_edge"] = None
         if n.data.get("windup", 0.0) > 0:
@@ -183,11 +175,7 @@ class EnemiesMixin:
                     n.data["attack_edge"] = e
                     n.data["attack_t"] = 0.5
                     n.data["melee_dmg"] = dmg
-                    self.fx.add_ring(n.x, n.y, n.r * 0.6, n.r * 3.2,
-                                     GOLD, 0.35, 3)
-                    self.fx.add_text(n.x, n.y - n.r - 14, "CUT!", GOLD,
-                                     16, 0.7)
-                    audio.play("weak")
+                    self.bus.emit(events.BATTLE_MELEE_TELEGRAPH, node=n)
             return
         self.enemy_move(n, dt, speed, keep)
         n.timers["atk"] = n.timers.get("atk", 0.0) - dt
@@ -195,8 +183,7 @@ class EnemiesMixin:
         if n.timers["atk"] <= 0 and d <= reach:
             n.data["windup"] = windup
             n.timers["atk"] = period * self.run.rng.uniform(0.9, 1.15)
-            self.fx.add_text(n.x, n.y - n.r - 12, "WINDUP", RED, 12, 0.5)
-            audio.play("ui")
+            self.bus.emit(events.BATTLE_MELEE_WINDUP, node=n)
 
     def enemy_move(self, n, dt, speed, keep):
         dx = self.player_node.x - n.x
@@ -234,7 +221,7 @@ class EnemiesMixin:
                            math.sin(ang) * sp,
                            5 if dmg < 5 else 7, dmg, color, necro=necro)
             self.projectiles.append(p)
-        audio.play("write", 0.35)
+        self.bus.emit(events.BATTLE_ENEMY_SHOT, node=n)
 
     def cycler_tick(self, n, dt):
         partner_id = n.data.get("partner")
@@ -251,7 +238,7 @@ class EnemiesMixin:
         if n.timers["special"] <= 0:
             n.timers["special"] = 1.6
             self.graph.add_edge(n, other, STRONG, unique=False)
-            self.fx.add_spark((n.x, n.y), (other.x, other.y), PURPLE, 0.3, 2)
+            self.bus.emit(events.BATTLE_CYCLER_LINK, node=n, other=other)
             self.toast("CYCLER 重建了强引用环")
 
     def spawn_minion(self, parent):
@@ -269,9 +256,7 @@ class EnemiesMixin:
         m.timers["atk"] = 1.8
         self.graph.add_node(m)
         self.graph.add_edge(parent, m, STRONG, unique=False)
-        self.fx.add_ring(x, y, 4, 34, TEAL, 0.4, 2)
-        self.fx.add_text(x, y - 24, "ALLOC", TEAL, 12, 0.8)
-        audio.play("link", 0.5)
+        self.bus.emit(events.BATTLE_MINION_SPAWN, x=x, y=y)
 
     def update_boss(self, n, dt):
         boss = n.data.get("boss")
@@ -283,13 +268,9 @@ class EnemiesMixin:
             n.data["invuln"] = False
             if not n.data.get("exposed_announced"):
                 n.data["exposed_announced"] = True
-                self.fx.add_flash(0.22, MAGENTA, 4)
-                self.fx.add_shake(12, 3.5)
-                self.fx.add_ring(n.x, n.y, 20, 220, MAGENTA, 0.7, 5)
-                self.fx.slow(0.5, 0.5)
-                self.fx.add_text(n.x, n.y - 70, "CORE EXPOSED", MAGENTA, 24, 1.6)
-                audio.play("gcstart")
+                self.clock.slow(0.5, 0.5)
                 self.toast("三根塔架已断：核心失去免疫")
+                self.bus.emit(events.BATTLE_BOSS_EXPOSED, node=n)
             n.timers["special"] -= dt
             if n.timers["special"] <= 0:
                 n.timers["special"] = 4.0
@@ -298,7 +279,7 @@ class EnemiesMixin:
                     self.projectiles.append(Projectile(
                         n.x, n.y, math.cos(ang) * 150, math.sin(ang) * 150,
                         7, 5.0, MAGENTA))
-                self.fx.add_ring(n.x, n.y, 20, 120, MAGENTA, 0.5, 4)
+                self.bus.emit(events.BATTLE_BOSS_RING, node=n)
             n.timers["phase"] -= dt
             if n.timers["phase"] <= 0:
                 n.timers["phase"] = 8.0
@@ -309,11 +290,12 @@ class EnemiesMixin:
             n.timers["special"] -= dt
             if n.timers["special"] <= 0:
                 n.timers["special"] = 6.5
+                corrupted = False
                 if len(self.deck.grid.dead) - self.start_dead < 3:
                     if self.run.add_dead_cells(1):
-                        self.fx.add_glitch(0.4)
+                        corrupted = True
                         self.toast("审计员烧坏了 1 个空闲格｜用 ECC 修回来")
-                self.fx.add_text(n.x, n.y - n.r - 16, "AUDIT", AMBER, 15, 0.9)
+                self.bus.emit(events.BATTLE_AUDIT, node=n, corrupted=corrupted)
         elif boss == "kernel":
             self.enemy_attack(n, dt, 2.6, 230, 6.0, CYAN)
             n.timers["special"] -= dt
@@ -340,8 +322,7 @@ class EnemiesMixin:
                 if p.necro:
                     if len(self.deck.grid.dead) - self.start_dead < 3:
                         if self.run.add_dead_cells(1):
-                            self.fx.add_text(self.player_node.x,
-                                             self.player_node.y - 40,
-                                             "BAD ACCESS", RED, 14, 1.0)
+                            self.bus.emit(events.BATTLE_BAD_ACCESS,
+                                          player=self.player_node)
 
     # ================================================================ 结算

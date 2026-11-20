@@ -8,7 +8,8 @@ body:
       value: |
         先读[协作规范](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/COLLABORATION.md)和[事件命名规范](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/EVENT_NAMING.md)。
 
-        父 Issue 里不要 @队友；**Assign 本 Issue 就是通知**。一个子 Issue 只做一个角色、一个目录、一个 PR。
+        父 Issue 里不要 @队友；**Assign 本 Issue 给 Owner 就是通知**，**不要加入 Project**。一个子 Issue 只做一个角色、一个目录、一个 PR。
+        不知道找谁先问 Lead/AI；功能做不做、范围、优先级由 Lead 决定。
   - type: input
     id: parent
     attributes:
@@ -81,4 +82,6 @@ body:
         - label: 事件名遵循 docs/EVENT_NAMING.md；只有事件总线/公共接口才 @lead
           required: false
         - label: 本 Issue 只有一个 Owner、一个目录、一个 PR
+          required: false
+        - label: 创建后 Assign 给 Owner，且不加入 Project
           required: false

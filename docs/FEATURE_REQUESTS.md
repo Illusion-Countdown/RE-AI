@@ -62,9 +62,11 @@ WEAK / LINK / GC / 护盾 / ALIAS / 坏死格 / 画质 / Boss 免疫？
 
 拆单规则：
 
-- 只动一个角色：直接开一个子 Issue，Assign 给 Owner。
+- 只动一个角色：直接开一个子 Issue，Assign 给 Owner，不加入 Project。
 - 动多个角色：先开父 Issue，再开 A/B/C/D 子 Issue。
-- 父 Issue 只写子 Issue 链接和 Owner，不 `@` 队友；队友的通知放在子 Issue。
+- 父 Issue Assign 给提需求的人自己，加入 Project；只写子 Issue 链接和 Owner，不 `@` 队友。
+- 子 Issue Assign 给 Owner，不加入 Project；队友的通知放在子 Issue。
+- 不知道找哪个 Owner 先问 Lead/AI；功能做不做、范围、优先级由 Lead 决定。
 - 事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自己定；只有事件总线/公共接口才 `@lead`。
 
 完整模板和通知矩阵见 [`COLLABORATION.md`](COLLABORATION.md)。

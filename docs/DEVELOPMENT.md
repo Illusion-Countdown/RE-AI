@@ -108,9 +108,10 @@ python tools/architecture_test.py
 协作 Issue 规则见 [`COLLABORATION.md`](COLLABORATION.md)：
 
 - 多角色需求：父 Issue + A/B/C/D 子 Issue
-- 父 Issue 只放子 Issue 链接和 Owner，不 @队友
-- 子 Issue 用 Assignee 通知；一个子 Issue 一个 Owner、一个目录、一个 PR
-- 只在公共接口、事件总线、跨 Owner 决策时 `@lead`；事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自助注册
+- 父 Issue Assign 给提需求的人自己，加入 Project；只放子 Issue 链接和 Owner，不 @队友
+- 子 Issue Assign 给 Owner，不加入 Project；一个子 Issue 一个 Owner、一个目录、一个 PR
+- 不知道找谁先问 Lead/AI；功能做不做、范围、优先级由 Lead 决定
+- 只在公共接口、事件总线、跨 Owner 决策、功能取舍时 `@lead`；事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自助注册
 
 ---
 

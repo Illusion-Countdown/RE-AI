@@ -7,9 +7,9 @@
 
 ## 0. 三条硬规则
 
-1. **父 Issue 不 @A/B/C/D**。父 Issue 只放子 Issue 链接和 Owner 名字；队友的通知下沉到子 Issue。
-2. **只有公共接口、事件总线、跨 Owner 决策才 @lead**。事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自己定，不需要 Lead 审批。
-3. **一个子 Issue = 一个 Owner + 一个目录 + 一个 PR**。需要别人配合时，再开一个子 Issue，不要在一个 Issue 里扩权。
+1. **父 Issue 不 @A/B/C/D**。父 Issue Assign 给提需求的人自己，并加入 Project；队友的通知下沉到子 Issue。
+2. **只有公共接口、事件总线、跨 Owner 决策、功能做不做、Owner 路由才 @lead**。事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自己定，不需要 Lead 审批。
+3. **一个子 Issue = 一个 Owner + 一个目录 + 一个 PR**。子 Issue Assign 给 Owner，不加入 Project；需要别人配合时，再开一个子 Issue。
 
 ---
 
@@ -23,7 +23,10 @@
 | **D 测试、音频与文档** | 测试、回归、性能、音频、文档整理 | `tools/`、`platform/audio.py`、`docs/` |
 | **Lead 接口与验收** | 公共接口、事件总线、架构、合并顺序、最终验收 | `app.py`、`const.py`、跨层接口 |
 
-实际 GitHub 用户名以仓库协作者为准；正文写 `Owner: B`，通知用 GitHub 右侧的 **Assignees** 指派，不要靠正文 @。**父 Issue 里不要 @ 队友，也不要 Assign 队友**。
+实际 GitHub 用户名以仓库协作者为准；正文写 `Owner: B`，通知用 GitHub 右侧的 **Assignees** 指派，不要靠正文 @。
+
+- **父 Issue**：Assign 给**提需求的人自己**，加入 **Project**；父 Issue 不放执行 Owner。
+- **子 Issue**：Assign 给**执行 Owner**，**不加入 Project**。
 
 ---
 
@@ -44,6 +47,8 @@
 
 ```text
 Parent: 无（单点需求）
+Assignee: Owner
+Project: 不加入
 ```
 
 ---
@@ -52,6 +57,9 @@ Parent: 无（单点需求）
 
 ```text
 标题：新敌人：<名字>
+
+Assignee: 你自己（提需求的人）
+Project: 加入
 
 ## 目标
 敌人死亡时 20% 分裂成 2 个最大生命 30% 的小怪；被击中不分裂。
@@ -70,7 +78,8 @@ payload：source_id, x, y, child_count
 事件叫什么名字，B 按 docs/EVENT_NAMING.md 自己定，不用问 Lead。
 
 ## 子任务
-只写编号和 Owner，不写 @：
+只写编号和 Owner，不写 @。
+子 Issue 创建后 Assign 给对应 Owner，不加入 Project：
 - [ ] #子1 [A] 数值与内容（Owner: A）
 - [ ] #子2 [B] 逻辑与事件（Owner: B）
 - [ ] #子3 [C] 粒子与飘字（Owner: C）
@@ -87,7 +96,7 @@ payload：source_id, x, y, child_count
 @lead 本次是否引入事件总线？不引入的话 B 先用直接回调。
 ```
 
-父 Issue 由提需求的人或协调者持有，**不要指派给 Lead 当实现者，也不要 Assign 给 A/B/C/D**；队友只在子 Issue 被 Assign。
+父 Issue 由提需求的人自己持有：**Assignee 填你自己，加入 Project**。不要指派给 Lead 当实现者；执行 Owner 只在子 Issue 被 Assign，子 Issue 不进 Project。
 
 ---
 
@@ -98,6 +107,7 @@ payload：source_id, x, y, child_count
 
 Parent: #父
 Assignee: B
+Project: 不加入
 
 ## 具体实现
 1. 敌人死亡时掷 20% 概率。
@@ -155,8 +165,16 @@ payload：source_id, x, y, child_count
 
 ## 6. @lead 的边界
 
+### 不知道找谁
+
+1. 先看上面的角色表和 [`DEVELOPMENT.md`](DEVELOPMENT.md) 的文件所有权。
+2. 还是不确定：**找 Lead 或 AI 助手帮你路由**，不要猜 Owner，也不要把子 Issue 空着。
+3. 属于“这个功能到底做不做、值不值得做、优先级多高”：`@lead`，由 Lead 决定。
+
 ### 应该 @lead
 
+- 功能做不做、范围、优先级
+- 不知道该找哪个 Owner，需要路由
 - 新增/修改事件总线、公共 API、跨层数据结构
 - A/B/C 三个目录都要改的 schema
 - 两个 Owner 对语义有冲突
@@ -189,13 +207,15 @@ payload：source_id, x, y, child_count
 1. 提需求的人先搜现有 Issue，确认不重复。
 
 2. 判断单角色还是多角色：
-   - 单角色：直接开子 Issue，Assign 给 Owner。
+   - 单角色：直接开子 Issue，Assign 给 Owner，不进 Project。
    - 多角色：先开父 Issue，再开子 Issue。
 
 3. 父 Issue 写目标、非目标、事件契约、验收；
+   Assign 给你自己，加入 Project。
    子任务只放子 Issue 编号和 Owner，不放 @。
 
-4. 每个子 Issue 写 Parent、具体实现、事件契约、验证、不做。
+4. 每个子 Issue 写 Parent、具体实现、事件契约、验证、不做；
+   Assign 给对应 Owner，不加入 Project。
    事件名由发送方自己定。
 
 5. Owner 在自己分支实现，PR 写 Parent: #父。
@@ -265,6 +285,7 @@ Parent: #父
 
 Parent/PR: #父 / #PR
 Assignee: D
+Project: 不加入
 
 ## 改了什么
 - 新增敌人“分裂者”
@@ -283,13 +304,14 @@ Assignee: D
 
 ---
 
-## 10. 通知矩阵
+## 10. Assignee、Project 与通知矩阵
 
-| 对象 | 在哪通知 | 怎么通知 |
-|---|---|---|
-| Lead | 父 Issue 或子 Issue | 只在需要决策时 `@lead`，写清问题、选项、阻塞点 |
-| A/B/C/D | 子 Issue | 用 Assignee；权限不够才在子 Issue 里 @ |
-| 所有人 | 父 Issue | 不群 @；需要同步就在各子 Issue 评论 |
+| 对象 | Assignee | Project | 通知方式 |
+|---|---|---|---|
+| 父 Issue | 提需求的人自己 | **加入** | 不 @队友；用 Project 跟踪进度 |
+| 子 Issue | 对应的执行 Owner | **不加入** | Assignee 就是通知；权限不够才在子 Issue 里 @ |
+| Lead | 不默认 Assign | 不默认加入 | 只在需要决策时 `@lead`，写清问题、选项、阻塞点 |
+| A/B/C/D | 只在子 Issue 被 Assign | 子 Issue 不进 Project | 不靠父 Issue 群 @ |
 
 ---
 
@@ -302,10 +324,13 @@ Assignee: D
 [ ] 人类明确要求创建/修改 Issue 或 PR
 [ ] 已搜索重复 Issue
 [ ] 单角色 → 一个子 Issue；多角色 → 父 + 子
+[ ] 父 Issue Assign 给提需求的人自己，并加入 Project
 [ ] 父 Issue 没有 @A/B/C/D，只写链接和 Owner
 [ ] 子 Issue 有 Parent、Owner、事件契约、验证、不做
+[ ] 子 Issue Assign 给 Owner，不加入 Project
+[ ] 不知道找谁时先问 Lead/AI；功能做不做由 Lead 决定
 [ ] 事件名按规范自助注册，没有为名字 @lead
-[ ] 只有公共接口/事件总线/跨 Owner 决策才 @lead
+[ ] 只有公共接口/事件总线/跨 Owner 决策/功能取舍才 @lead
 [ ] 一个子 Issue 一个目录一个 PR
 [ ] 代码 PR 合并后，由父 Issue Owner 创建 D 文档 Issue；单点需求由代码作者开，不推给 Lead 代写
 [ ] 不自行合并 PR
@@ -316,7 +341,11 @@ Assignee: D
 ## 12. 反例
 
 - 父 Issue 里 `@A @B @C @D` → 队友被父、子同时通知。
+- 父 Issue 没有 Assign 给自己、没有进 Project → 没人跟踪进度。
+- 子 Issue 被加进 Project → 看板被执行任务淹没，父 Issue 反而看不清。
 - 父 Issue 指派给 Lead 写代码 → Lead 又变成瓶颈。
+- 不知道 Owner 就随便猜 → 任务做错人，最后还要重开。
+- 功能做不做还没定就先拆子 Issue → 白做。
 - 子 Issue 没有 `Parent:` → 完成后无法关父任务。
 - C 自己轮询敌人死亡，不监听 B 的事件 → 两边逻辑漂移。
 - 为了事件名 `@lead` → 起名机器回归。

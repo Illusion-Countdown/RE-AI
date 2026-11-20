@@ -67,8 +67,10 @@ Get-Command gh
 - 关联已有 Issue 为子 Issue 时，确认父子关系，不要顺带关闭父 Issue。
 - 不要批量创建重复 Issue；先搜索现有 Issue 和 Roadmap。
 - 多角色需求：父 Issue + 每个角色一个子 Issue；父 Issue 只放子 Issue 链接和 Owner，**不 @A/B/C/D**。
-- 子 Issue 用 Assignee 通知 Owner；一个子 Issue 一个 Owner、一个目录、一个 PR。
-- 只在公共接口、事件总线、跨 Owner schema、语义/范围冲突时 `@lead`；事件名按 [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md) 自助注册，不要为起名 @lead。
+- 父 Issue 的 Assignee 是**提需求的人自己**，并**加入 Project**；父 Issue 不放执行 Owner。
+- 子 Issue 的 Assignee 是对应 **Owner**，**不加入 Project**；一个子 Issue 一个 Owner、一个目录、一个 PR。
+- 不知道找哪个 Owner：先问 Lead 或 AI 助手路由，不要猜；功能做不做、范围、优先级由 `@lead` 决定。
+- 只在公共接口、事件总线、跨 Owner schema、语义/范围冲突、功能取舍时 `@lead`；事件名按 [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md) 自助注册，不要为起名 @lead。
 - 代码 PR 合并后，由父 Issue Owner 给 D 开文档 Issue；单点需求由代码作者开；父 Owner 不在时由最后一个合并的子任务 Owner 兜底。Lead 不默认代写。文档必须随代码合并时，D 作为合并前子 Issue。
 - 完整流程和模板见 [`docs/COLLABORATION.md`](docs/COLLABORATION.md)。
 

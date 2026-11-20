@@ -181,7 +181,7 @@ b2.on_mouse_down((10, 10), 1)
 assert b2.hand.slots[1] is link
 print("connection target required ok")
 
-# WRITE has a shorter range: 380 px misses, 320 px hits
+# WRITE has a shorter range: WRITE_RANGE + 40 misses, - 40 hits
 b2.state = "playing"
 shoot = next(n for n in b2.graph.hostiles()
              if n.alive and not n.data.get("boss"))

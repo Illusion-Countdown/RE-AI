@@ -209,24 +209,24 @@ class Graph:
                 c += 1
         return c
 
-    def depth_from_roots(self, target):
-        """目标到任意 ROOT 的最短引用距离；不可达返回 99。"""
-        roots = [n for n in self.nodes if n.alive and n.kind == "ROOT"]
-        if target in roots:
-            return 0
-        seen = set(roots)
-        queue = [(n, 0) for n in roots]
-        while queue:
-            cur, depth = queue.pop(0)
+    def subtree_stats(self, n):
+        """当前节点下仍存活的子节点数与最大层数。"""
+        seen = {n}
+        stack = [(n, 0)]
+        count = 0
+        max_depth = 0
+        while stack:
+            cur, depth = stack.pop()
             for e in self.outgoing(cur):
-                if not e.alive or not e.dst.alive:
+                dst = e.dst
+                if (not e.alive or not dst.alive or dst in seen
+                        or dst is self.player or dst.kind == "ROOT"):
                     continue
-                if e.dst is target:
-                    return depth + 1
-                if e.dst not in seen:
-                    seen.add(e.dst)
-                    queue.append((e.dst, depth + 1))
-        return 99
+                seen.add(dst)
+                count += 1
+                max_depth = max(max_depth, depth + 1)
+                stack.append((dst, depth + 1))
+        return count, max_depth
 
     def alive_nodes(self):
         return [n for n in self.nodes if n.alive]

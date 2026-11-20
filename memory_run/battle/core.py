@@ -147,9 +147,6 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
                 g.add_edge(by_id[a], by_id[b], kind, unique=False)
         self.add_reinforcements(by_id)
         g.time = 0.0
-        # 先缓存到 ROOT 的深度；剪边后图会断开，不能等 GC 时再算
-        for node in g.nodes:
-            node.data["root_depth"] = g.depth_from_roots(node)
         self.by_id = by_id
         self.root = by_id.get("scope")
 

@@ -215,9 +215,15 @@ b3 = Battle(r3, FX())
 b3.state = "playing"
 hub = b3.by_id["hub"]
 leaf = b3.by_id["m1"]
-assert b3.graph.depth_from_roots(hub) == 1
-assert b3.graph.depth_from_roots(leaf) == 2
-assert b3.shock_radius(hub, 1) > b3.shock_radius(leaf, 2)
+hub_count, hub_depth = b3.graph.subtree_stats(hub)
+leaf_count, leaf_depth = b3.graph.subtree_stats(leaf)
+assert (hub_count, hub_depth) == (3, 1)
+assert (leaf_count, leaf_depth) == (0, 0)
+before_clear = b3.shock_radius(hub, hub_count, hub_depth)
+b3.graph.remove_node(leaf)
+after_count, after_depth = b3.graph.subtree_stats(hub)
+after_clear = b3.shock_radius(hub, after_count, after_depth)
+assert after_clear < before_clear, "clearing children should shrink shockwave"
 b3.player_node.x, b3.player_node.y = hub.x, hub.y
 b3.hp = b3.max_hp = 100
 hp0 = b3.hp

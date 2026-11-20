@@ -87,6 +87,7 @@ python tools/architecture_test.py
 | `ui/screens.py` / `ui/deckui.py` | C | 界面、整备、商店 |
 | `ui/fx.py` | C | 屏幕 FX |
 | `platform/audio.py` | D | 音频、设备切换 |
+| `memory_run/events.py` | 公共注册表 | 任何人可加事件名；Lead 只审格式/重复 |
 | `tools/*` | D | 测试、回归、性能 |
 | `docs/*` | D 汇总 | Owner 提供内容 |
 
@@ -103,6 +104,14 @@ python tools/architecture_test.py
 | **C UI 与表现** | 渲染、HUD、整备、商店、拖拽、CUT 划线、FX、截图 | 战斗数值、内容表 |
 | **D 平台与 QA** | 音频、崩溃、测试、性能、CI、发布、文档汇总 | 玩法逻辑、UI 布局 |
 | **Lead** | 接口、`app.py`、`const.py`、合并、版本、验收 | 不替队友写整块 |
+
+协作 Issue 规则见 [`COLLABORATION.md`](COLLABORATION.md)：
+
+- 多角色需求：父 Issue + A/B/C/D 子 Issue
+- 父 Issue Assign 给提需求的人自己，加入 Project；只放子 Issue 链接和 Owner，不 @队友
+- 子 Issue Assign 给 Owner，不加入 Project；一个子 Issue 一个 Owner、一个目录、一个 PR
+- 不知道找谁先问 Lead/AI；功能做不做、范围、优先级由 Lead 决定
+- 只在公共接口、事件总线、跨 Owner 决策、功能取舍时 `@lead`；事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自助注册
 
 ---
 
@@ -206,6 +215,28 @@ audio.next_device()
 
 音效名必须先注册在 `platform/audio.py`。
 
+### 事件 / Events
+
+事件名注册表：
+
+```text
+memory_run/events.py
+```
+
+规则见 [`EVENT_NAMING.md`](EVENT_NAMING.md)：
+
+- 格式 `DOMAIN_ACTION[_STATE]`，全大写，2–5 段
+- 常量名与字符串值完全一致
+- 同一个 PR 里注册并使用，不预埋空事件
+- 业务模块只使用 `events.XXX`，不写裸字符串
+- 当前还没有事件总线，注册表暂时为空；第一个跨层事件再按规范接线
+
+检查：
+
+```powershell
+python tools/events_test.py
+```
+
 ---
 
 ## 7. 提交与 PR
@@ -240,8 +271,10 @@ PR 必须写：
 
 - 改了什么
 - 为什么
+- 事件契约（没有写“无”）
 - 怎么测
 - 影响哪些文件
+- 关联 Issue，以及 `Parent: #父`（单点需求写 `Parent: 无`）
 - UI 截图（如适用）
 
 不要：
@@ -263,6 +296,7 @@ python tools/run_all.py
 包含：
 
 - 分层依赖
+- 事件命名与注册表
 - 机制
 - 18 关清场
 - 教程
@@ -274,6 +308,7 @@ python tools/run_all.py
 单独跑：
 
 ```powershell
+python tools/events_test.py
 python tools/mechanics_test.py
 python tools/rooms_test.py
 python tools/screens_test.py
@@ -329,6 +364,7 @@ content/procgen/
 
 - 内容改动 → `docs/CONTENT.md`
 - 结构/所有权/流程 → 本文件
+- 协作 Issue / 通知 / @lead 边界 → `docs/COLLABORATION.md`
 - 路线/版本 → `ROADMAP.md` / `CHANGELOG.md`
 - 新功能需求 → `docs/FEATURE_REQUESTS.md`
 - 设计历史 → `docs/DESIGN.md`

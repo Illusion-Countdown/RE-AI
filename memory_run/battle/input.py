@@ -101,7 +101,7 @@ class InputMixin:
             return
         if pygame.K_1 <= key <= pygame.K_3:
             self.select_slot(key - pygame.K_1)
-        elif key in (pygame.K_c, pygame.K_LSHIFT, pygame.K_RSHIFT):
+        elif key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
             self.cycle_card(-1)
         elif key == pygame.K_SPACE:
             self.cycle_card(1)

@@ -204,7 +204,7 @@ class PlayerMixin:
             if not n.alive:
                 continue
             d = vdist(px, py, n.x, n.y)
-            if d > 460 or d < 1:
+            if d > WRITE_RANGE or d < 1:
                 continue
             a = math.atan2(n.y - py, n.x - px)
             diff = abs((a - ang + math.pi) % math.tau - math.pi)

@@ -1,6 +1,7 @@
 # 新功能需求模板
 
 > 不要只说“加个玩法”。一页写清：玩家做什么、系统怎么变、失败怎么办、怎么验收。
+> 多角色协作、父子 Issue、事件契约和 `@lead` 边界见 [`COLLABORATION.md`](COLLABORATION.md)。
 
 ---
 
@@ -58,6 +59,17 @@ WEAK / LINK / GC / 护盾 / ALIAS / 坏死格 / 画质 / Boss 免疫？
 | `[C] 表现` | 卡面、拖拽、HUD、特效、音效触发 | `screens_test` + 手窗口 |
 | `[D] QA` | 新测试、种子/长时模拟、性能、音频 | `run_all` 全绿 |
 | `[Lead] 接口` | 新字段/事件/状态、兼容、合并 | 全量回归 |
+
+拆单规则：
+
+- 只动一个角色：直接开一个子 Issue，Assign 给 Owner，不加入 Project。
+- 动多个角色：先开父 Issue，再开 A/B/C/D 子 Issue。
+- 父 Issue Assign 给提需求的人自己，加入 Project；只写子 Issue 链接和 Owner，不 `@` 队友。
+- 子 Issue Assign 给 Owner，不加入 Project；队友的通知放在子 Issue。
+- 不知道找哪个 Owner 先问 Lead/AI；功能做不做、范围、优先级由 Lead 决定。
+- 事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自己定；只有事件总线/公共接口才 `@lead`。
+
+完整模板和通知矩阵见 [`COLLABORATION.md`](COLLABORATION.md)。
 
 ---
 

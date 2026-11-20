@@ -3,7 +3,7 @@
 import math
 from memory_run.const import *
 
-STRONG, WEAK, DANGLING, ALIAS = "STRONG", "WEAK", "DANGLING", "ALIAS"
+STRONG, WEAK, DANGLING, ALIAS, PARRY = "STRONG", "WEAK", "DANGLING", "ALIAS", "PARRY"
 
 _uid = [0]
 
@@ -94,6 +94,8 @@ class Edge:
             return PURPLE
         if self.kind == DANGLING:
             return RED
+        if self.kind == PARRY:
+            return GOLD
         return MAGENTA
 
     def ctrl(self):
@@ -208,6 +210,25 @@ class Graph:
             if e.alive and e.dst is n and e.kind == STRONG:
                 c += 1
         return c
+
+    def subtree_stats(self, n):
+        """当前节点下仍存活的子节点数与最大层数。"""
+        seen = {n}
+        stack = [(n, 0)]
+        count = 0
+        max_depth = 0
+        while stack:
+            cur, depth = stack.pop()
+            for e in self.outgoing(cur):
+                dst = e.dst
+                if (not e.alive or not dst.alive or dst in seen
+                        or dst is self.player or dst.kind == "ROOT"):
+                    continue
+                seen.add(dst)
+                count += 1
+                max_depth = max(max_depth, depth + 1)
+                stack.append((dst, depth + 1))
+        return count, max_depth
 
     def alive_nodes(self):
         return [n for n in self.nodes if n.alive]

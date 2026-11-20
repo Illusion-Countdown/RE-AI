@@ -8,6 +8,9 @@ body:
       value: |
         请先写清“玩家体验”和“具体规则”，不要只写“加个玩法”。
         详细模板见 [`docs/FEATURE_REQUESTS.md`](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/FEATURE_REQUESTS.md)。
+        多角色需求先看[协作规范](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/COLLABORATION.md)：父 Issue 不 @队友，通知下沉到子 Issue。
+        多角色需求：父 Issue 创建后 **Assign 给你自己，并加入 Project**；子 Issue Assign 给 Owner，不加入 Project。
+        不知道找谁先问 Lead/AI；功能做不做、范围、优先级由 Lead 决定。
         优先级标签由维护者按[标签规则](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/LABELS.md)统一设置。
   - type: textarea
     id: idea
@@ -35,6 +38,29 @@ body:
     attributes:
       label: 影响范围（可选）
       description: 内容数据 / 战斗行为 / UI / 音效 / 接口
+    validations:
+      required: false
+  - type: textarea
+    id: event_contract
+    attributes:
+      label: 事件契约（多角色需求）
+      description: 事件名 / 发送方 / 监听方 / payload / 注册人；没有事件写“无”。规则见 docs/EVENT_NAMING.md。
+      placeholder: |
+        事件名：ENEMY_SPLIT_ON_DEATH
+        发送方：B
+        监听方：C / D
+        payload：source_id, x, y, child_count
+        注册：memory_run/events.py
+    validations:
+      required: false
+  - type: textarea
+    id: subtasks
+    attributes:
+      label: 子任务（多角色需求）
+      description: 列出子 Issue 编号和 Owner，不要写 @；单角色需求可留空
+      placeholder: |
+        - [ ] #12 [C] 粒子特效（Owner: C）
+        - [ ] #13 [B] 分裂逻辑（Owner: B）
     validations:
       required: false
   - type: textarea

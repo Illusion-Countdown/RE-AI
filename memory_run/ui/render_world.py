@@ -50,6 +50,15 @@ class WorldMixin:
     def draw_edge(self, surf, b, e, ox, oy):
         pts = [(x + ox, y + oy) for x, y in e.points(20)]
         col = e.color
+        if e.kind == PARRY:
+            pulse = 0.5 + 0.5 * math.sin(b.time * 18)
+            pygame.draw.lines(surf, with_alpha(RED, 70), False, pts, 10)
+            pygame.draw.lines(surf, GOLD if pulse > 0.5 else RED,
+                              False, pts, 3)
+            mx, my = pts[len(pts) // 2]
+            blit_text(surf, "CUT!", (mx, my - 14), 13, GOLD,
+                      anchor="midtop", mono=True, bold=True)
+            return
         weak = e.kind == WEAK
         if weak:
             # 弱引用：沿曲线挖空，保留“观测”而非“持有”的感觉
@@ -203,6 +212,18 @@ class WorldMixin:
                                (int(oxp), int(oyp)), 3)
             if i == 1:
                 pygame.draw.circle(surf, GOLD, (int(oxp), int(oyp)), 13, 2)
+        # 角色旁选中牌回声：不低头也能确认当前牌名
+        sel = b.hand.slots[b.selected]
+        if sel is not None:
+            name = sel.name
+            pw = text_w(name, 10, bold=True) + 34
+            pill = pygame.Rect(int(x - pw / 2), int(y - 90), pw, 20)
+            pygame.draw.rect(surf, (7, 11, 16, 200), pill, border_radius=5)
+            pygame.draw.rect(surf, sel.color, pill, 1, border_radius=5)
+            icon = pygame.Rect(pill.x + 4, pill.y + 3, 14, 14)
+            draw_card_mini(surf, icon, sel.key, sel.up)
+            blit_text(surf, name, (pill.x + 22, pill.y + 3), 10,
+                      WHITE, bold=True)
         if b.iframe > 0:
             a = int(120 + 100 * math.sin(self.t * 20))
             pygame.draw.circle(surf, with_alpha(WHITE, a), (int(x), int(y)),
@@ -230,6 +251,12 @@ class WorldMixin:
             self.shape_alloc(surf, n, x, y, col, hover)
         elif n.kind == "CRAWLER":
             self.shape_eraser(surf, n, x, y, col, hover)
+        elif n.kind == "LUNGER":
+            self.shape_alloc(surf, n, x, y, col, hover)
+        elif n.kind == "SLASHER":
+            self.shape_sentinel(surf, n, x, y, col, hover)
+        elif n.kind == "EXECUTOR":
+            self.shape_cycler(surf, n, x, y, col, hover)
         elif n.kind == "SENTINEL":
             self.shape_sentinel(surf, n, x, y, col, hover)
         elif n.kind == "PYLON":

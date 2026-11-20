@@ -13,7 +13,8 @@ from memory_run.app import App
 from memory_run.cards import CARD_DEFS
 from memory_run.content import ROOMS, BOSS_RULES
 from memory_run.core.cards import Deck
-from memory_run.battle.constants import DEFAULT_HP
+from memory_run.core.model import PARRY
+from memory_run.battle.constants import DEFAULT_HP, WRITE_RANGE
 
 # content consistency
 zones = {
@@ -180,6 +181,81 @@ b2.aim_selected()
 b2.on_mouse_down((10, 10), 1)
 assert b2.hand.slots[1] is link
 print("connection target required ok")
+
+# WRITE has a shorter range: WRITE_RANGE + 40 misses, - 40 hits
+b2.state = "playing"
+shoot = next(n for n in b2.graph.hostiles()
+             if n.alive and not n.data.get("boss"))
+others = [n for n in b2.graph.hostiles() if n.alive and n is not shoot]
+saved = [(n, n.x, n.y) for n in others]
+for n in others:
+    n.x, n.y = 5000, 5000
+px, py = b2.player_node.x, b2.player_node.y
+shoot.x, shoot.y = px + WRITE_RANGE + 40, py
+b2.write_cd = 0
+b2.mouse = (shoot.x, shoot.y)
+hp = shoot.hp
+b2.write_attack()
+assert shoot.hp == hp, "WRITE should miss outside its range"
+shoot.x = px + WRITE_RANGE - 40
+b2.write_cd = 0
+b2.mouse = (shoot.x, shoot.y)
+b2.write_attack()
+assert shoot.hp < hp, "WRITE should hit inside its range"
+for n, x, y in saved:
+    n.x, n.y = x, y
+print("write range ok")
+
+# CUT-triggered GC: depth-based shockwave damages player and corrupts grid
+from memory_run.runstate import RunState
+from memory_run.battle import Battle
+from memory_run.ui.fx import FX
+r3 = RunState(tutorial=False, seed=7, body_id="tree")
+r3.begin_room()
+b3 = Battle(r3, FX())
+b3.state = "playing"
+hub = b3.by_id["hub"]
+leaf = b3.by_id["m1"]
+hub_count, hub_depth = b3.graph.subtree_stats(hub)
+leaf_count, leaf_depth = b3.graph.subtree_stats(leaf)
+assert (hub_count, hub_depth) == (3, 1)
+assert (leaf_count, leaf_depth) == (0, 0)
+before_clear = b3.shock_radius(hub, hub_count, hub_depth)
+b3.graph.remove_node(leaf)
+after_count, after_depth = b3.graph.subtree_stats(hub)
+after_clear = b3.shock_radius(hub, after_count, after_depth)
+assert after_clear < before_clear, "clearing children should shrink shockwave"
+b3.player_node.x, b3.player_node.y = hub.x, hub.y
+b3.hp = b3.max_hp = 100
+hp0 = b3.hp
+dead0 = len(b3.deck.grid.dead)
+edge = next(e for e in b3.graph.edges
+            if e.src is b3.root and e.dst is hub)
+b3.cut_edge(edge)
+assert b3.hp < hp0, "shockwave should damage nearby player"
+assert len(b3.deck.grid.dead) > dead0, "shockwave hit should corrupt grid"
+print("gc shockwave ok")
+
+# melee attack edge: CUT parries and staggers; ignoring it damages the player
+r4 = RunState(tutorial=False, seed=3, body_id="tree")
+r4.step = 6  # R03, contains a LUNGER
+r4.begin_room()
+b4 = Battle(r4, FX())
+b4.state = "playing"
+lunger = b4.by_id["l1"]
+edge = b4.graph.add_edge(lunger, b4.player_node, PARRY, unique=False)
+lunger.data.update({"attack_edge": edge, "attack_t": 0.4, "melee_dmg": 10})
+hp0 = b4.hp
+assert b4.cut_edge(edge), "CUT should parry a melee edge"
+assert b4.hp == hp0, "parry must prevent damage"
+assert lunger.stun > 0, "parry should stagger"
+assert not edge.alive
+lunger.stun = 0.0
+edge2 = b4.graph.add_edge(lunger, b4.player_node, PARRY, unique=False)
+lunger.data.update({"attack_edge": edge2, "attack_t": 0.01, "melee_dmg": 10})
+b4.update_melee(lunger, 0.02)
+assert b4.hp < hp0, "unparried melee edge should damage player"
+print("melee parry ok")
 
 print("MECHANICS OK")
 pygame.quit()

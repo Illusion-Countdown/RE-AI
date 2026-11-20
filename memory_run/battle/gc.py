@@ -151,6 +151,40 @@ class GcMixin:
                 self.fx.add_ring(x, y, 10, rad, GREEN, 0.4, 3)
                 audio.play("weak")
 
+    def shock_radius(self, n, count, max_depth):
+        """按当前子树大小和深度缩放；清掉子节点后半径会下降。"""
+        base = n.r * 4.5
+        radius = base * (1.0 + 0.85 * count + 1.0 * max_depth)
+        return min(780.0, radius)
+
+    def shock_damage(self, count, max_depth, dist, radius):
+        base = 4.0 + min(12.0, 0.9 * count + 2.0 * max_depth)
+        falloff = max(0.35, 1.0 - 0.65 * dist / max(1.0, radius))
+        return base * falloff
+
+    def apply_shockwave(self, n, count, max_depth):
+        radius = self.shock_radius(n, count, max_depth)
+        dist = vdist(n.x, n.y, self.player_node.x, self.player_node.y)
+        color = WHITE if radius > 500 else CYAN
+        # GC 环本身就是冲击波：从节点半径扩到冲击半径
+        self.fx.add_ring(n.x, n.y, max(6.0, n.r * 0.5), radius,
+                         color, 0.55, 4)
+        self.fx.add_ring(n.x, n.y, max(4.0, n.r * 0.35), radius * 0.72,
+                         color, 0.40, 2)
+        if radius > 360:
+            self.fx.add_flash(0.06, color, 5)
+            self.fx.add_shake(7, 4)
+        if self.state != "playing" or dist > radius:
+            return
+        dmg = self.shock_damage(count, max_depth, dist, radius)
+        self.damage_player(dmg, force=True)
+        added = self.run.add_dead_cells(1)
+        if added:
+            self.fx.add_text(self.player_node.x, self.player_node.y - 48,
+                             "CORRUPT", MAGENTA, 14, 1.0)
+        self.fx.add_text(self.player_node.x, self.player_node.y - 34,
+                         f"SHOCK -{int(dmg)}", color, 15, 0.7)
+
     def resolve_gc(self):
         if not self.gc_dirty:
             return
@@ -187,12 +221,13 @@ class GcMixin:
 
     def gc_erase(self, n):
         x, y, kind = n.x, n.y, n.kind
+        count, max_depth = self.graph.subtree_stats(n)
         dtor = (n.data.get("destructor") and
                 not n.data.get("cast_stripped")) or kind == "BOMB"
         if dtor:
             self.pending_explosions.append((x, y, 160, 26, "dtor"))
         self.graph.remove_node(n)
-        self.fx.add_ring(x, y, n.r * 0.3, n.r * 2.8, CYAN, 0.5, 2)
+        self.apply_shockwave(n, count, max_depth)
         self.fx.add_parts(x, y, CYAN, 10, 130, 0.5, 1.8)
         self.fx.add_text(x, y - n.r - 14, "GC", CYAN, 14, 0.8)
         self.fx.add_flash(0.025, CYAN, 14)

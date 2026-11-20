@@ -203,6 +203,18 @@ class WorldMixin:
                                (int(oxp), int(oyp)), 3)
             if i == 1:
                 pygame.draw.circle(surf, GOLD, (int(oxp), int(oyp)), 13, 2)
+        # 角色旁选中牌回声：不低头也能确认当前牌名
+        sel = b.hand.slots[b.selected]
+        if sel is not None:
+            name = sel.name
+            pw = text_w(name, 10, bold=True) + 34
+            pill = pygame.Rect(int(x - pw / 2), int(y - 90), pw, 20)
+            pygame.draw.rect(surf, (7, 11, 16, 200), pill, border_radius=5)
+            pygame.draw.rect(surf, sel.color, pill, 1, border_radius=5)
+            icon = pygame.Rect(pill.x + 4, pill.y + 3, 14, 14)
+            draw_card_mini(surf, icon, sel.key, sel.up)
+            blit_text(surf, name, (pill.x + 22, pill.y + 3), 10,
+                      WHITE, bold=True)
         if b.iframe > 0:
             a = int(120 + 100 * math.sin(self.t * 20))
             pygame.draw.circle(surf, with_alpha(WHITE, a), (int(x), int(y)),

@@ -50,6 +50,15 @@ class WorldMixin:
     def draw_edge(self, surf, b, e, ox, oy):
         pts = [(x + ox, y + oy) for x, y in e.points(20)]
         col = e.color
+        if e.kind == PARRY:
+            pulse = 0.5 + 0.5 * math.sin(b.time * 18)
+            pygame.draw.lines(surf, with_alpha(RED, 70), False, pts, 10)
+            pygame.draw.lines(surf, GOLD if pulse > 0.5 else RED,
+                              False, pts, 3)
+            mx, my = pts[len(pts) // 2]
+            blit_text(surf, "CUT!", (mx, my - 14), 13, GOLD,
+                      anchor="midtop", mono=True, bold=True)
+            return
         weak = e.kind == WEAK
         if weak:
             # 弱引用：沿曲线挖空，保留“观测”而非“持有”的感觉
@@ -242,6 +251,12 @@ class WorldMixin:
             self.shape_alloc(surf, n, x, y, col, hover)
         elif n.kind == "CRAWLER":
             self.shape_eraser(surf, n, x, y, col, hover)
+        elif n.kind == "LUNGER":
+            self.shape_alloc(surf, n, x, y, col, hover)
+        elif n.kind == "SLASHER":
+            self.shape_sentinel(surf, n, x, y, col, hover)
+        elif n.kind == "EXECUTOR":
+            self.shape_cycler(surf, n, x, y, col, hover)
         elif n.kind == "SENTINEL":
             self.shape_sentinel(surf, n, x, y, col, hover)
         elif n.kind == "PYLON":

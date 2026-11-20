@@ -100,6 +100,9 @@ class EnemiesMixin:
             if n.data.get("boss"):
                 self.update_boss(n, dt)
                 continue
+            if n.kind in ("LUNGER", "SLASHER", "EXECUTOR"):
+                self.update_melee(n, dt)
+                continue
             if n.kind == "MINION":
                 self.enemy_move(n, dt, 72.0, 175.0)
                 self.enemy_attack(n, dt, 2.2, 180, 4.0, RED)
@@ -147,6 +150,53 @@ class EnemiesMixin:
                 self.enemy_attack(n, dt, 2.8, 180, 5.0, AMBER, necro=True)
             elif n.kind == "ERASER":
                 self.enemy_attack(n, dt, 2.2, 240, 6.0, WHITE)
+
+    def update_melee(self, n, dt):
+        cfg = {
+            "LUNGER":   (150.0, 62.0, 0.45, 150.0, 10.0, 2.6),
+            "SLASHER":  (110.0, 74.0, 0.65, 175.0, 16.0, 3.0),
+            "EXECUTOR": (85.0, 90.0, 0.85, 205.0, 24.0, 3.6),
+        }[n.kind]
+        speed, keep, windup, reach, dmg, period = cfg
+        edge = n.data.get("attack_edge")
+        if edge is not None and edge.alive:
+            n.data["attack_t"] = n.data.get("attack_t", 0.5) - dt
+            if n.data["attack_t"] <= 0:
+                self.graph.remove_edge(edge)
+                n.data["attack_edge"] = None
+                if self.state == "playing":
+                    self.damage_player(n.data.get("melee_dmg", dmg), force=True)
+                    self.fx.add_spark((n.x, n.y),
+                                      (self.player_node.x, self.player_node.y),
+                                      RED, 0.28, 4)
+                    self.fx.add_flash(0.05, RED, 8)
+                    self.fx.add_shake(5, 6)
+                    audio.play("hurt")
+            return
+        n.data["attack_edge"] = None
+        if n.data.get("windup", 0.0) > 0:
+            n.data["windup"] -= dt
+            if n.data["windup"] <= 0:
+                e = self.graph.add_edge(n, self.player_node, PARRY,
+                                        unique=False)
+                if e is not None:
+                    n.data["attack_edge"] = e
+                    n.data["attack_t"] = 0.5
+                    n.data["melee_dmg"] = dmg
+                    self.fx.add_ring(n.x, n.y, n.r * 0.6, n.r * 3.2,
+                                     GOLD, 0.35, 3)
+                    self.fx.add_text(n.x, n.y - n.r - 14, "CUT!", GOLD,
+                                     16, 0.7)
+                    audio.play("weak")
+            return
+        self.enemy_move(n, dt, speed, keep)
+        n.timers["atk"] = n.timers.get("atk", 0.0) - dt
+        d = vdist(n.x, n.y, self.player_node.x, self.player_node.y)
+        if n.timers["atk"] <= 0 and d <= reach:
+            n.data["windup"] = windup
+            n.timers["atk"] = period * self.run.rng.uniform(0.9, 1.15)
+            self.fx.add_text(n.x, n.y - n.r - 12, "WINDUP", RED, 12, 0.5)
+            audio.play("ui")
 
     def enemy_move(self, n, dt, speed, keep):
         dx = self.player_node.x - n.x

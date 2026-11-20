@@ -13,6 +13,7 @@ from memory_run.app import App
 from memory_run.cards import CARD_DEFS
 from memory_run.content import ROOMS, BOSS_RULES
 from memory_run.core.cards import Deck
+from memory_run.core.model import PARRY
 from memory_run.battle.constants import DEFAULT_HP, WRITE_RANGE
 
 # content consistency
@@ -234,6 +235,27 @@ b3.cut_edge(edge)
 assert b3.hp < hp0, "shockwave should damage nearby player"
 assert len(b3.deck.grid.dead) > dead0, "shockwave hit should corrupt grid"
 print("gc shockwave ok")
+
+# melee attack edge: CUT parries and staggers; ignoring it damages the player
+r4 = RunState(tutorial=False, seed=3, body_id="tree")
+r4.step = 6  # R03, contains a LUNGER
+r4.begin_room()
+b4 = Battle(r4, FX())
+b4.state = "playing"
+lunger = b4.by_id["l1"]
+edge = b4.graph.add_edge(lunger, b4.player_node, PARRY, unique=False)
+lunger.data.update({"attack_edge": edge, "attack_t": 0.4, "melee_dmg": 10})
+hp0 = b4.hp
+assert b4.cut_edge(edge), "CUT should parry a melee edge"
+assert b4.hp == hp0, "parry must prevent damage"
+assert lunger.stun > 0, "parry should stagger"
+assert not edge.alive
+lunger.stun = 0.0
+edge2 = b4.graph.add_edge(lunger, b4.player_node, PARRY, unique=False)
+lunger.data.update({"attack_edge": edge2, "attack_t": 0.01, "melee_dmg": 10})
+b4.update_melee(lunger, 0.02)
+assert b4.hp < hp0, "unparried melee edge should damage player"
+print("melee parry ok")
 
 print("MECHANICS OK")
 pygame.quit()

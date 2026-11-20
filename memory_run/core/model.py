@@ -3,7 +3,7 @@
 import math
 from memory_run.const import *
 
-STRONG, WEAK, DANGLING, ALIAS = "STRONG", "WEAK", "DANGLING", "ALIAS"
+STRONG, WEAK, DANGLING, ALIAS, PARRY = "STRONG", "WEAK", "DANGLING", "ALIAS", "PARRY"
 
 _uid = [0]
 
@@ -94,6 +94,8 @@ class Edge:
             return PURPLE
         if self.kind == DANGLING:
             return RED
+        if self.kind == PARRY:
+            return GOLD
         return MAGENTA
 
     def ctrl(self):

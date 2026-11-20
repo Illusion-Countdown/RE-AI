@@ -179,6 +179,8 @@ class ActionsMixin:
     def cut_edge(self, e):
         if e is None or not e.alive:
             return False
+        if e.kind == PARRY:
+            return self.parry_melee(e)
         dst = e.dst
         if dst.data.get("cut_immune") and not dst.data.get("cast_stripped"):
             self.nope(f"{dst.name} 拒绝被 CUT：先用 CAST 赋予类型")
@@ -211,6 +213,35 @@ class ActionsMixin:
         if e.src is self.player_node:
             dst.data["held"] = False
         self.resolve_gc()
+        return True
+
+    def parry_melee(self, e):
+        src = e.src
+        self.graph.remove_edge(e)
+        if src is not None and src.alive:
+            src.data["attack_edge"] = None
+            src.data["windup"] = 0.0
+            src.stun = max(src.stun, 1.6)
+            src.timers["atk"] = max(src.timers.get("atk", 0.0), 1.0)
+            self.apply_damage(src, 8, GOLD, source="parry")
+        self.work_used = max(0.0, self.work_used - 1.0)
+        self.focus = min(self.focus_max, self.focus + 0.6)
+        self.stats["cuts"] += 1
+        self.stats["parries"] = self.stats.get("parries", 0) + 1
+        self.run.stats["cuts"] += 1
+        self.fx.add_spark((src.x, src.y) if src else (self.player_node.x,
+                                                      self.player_node.y),
+                          (self.player_node.x, self.player_node.y),
+                          GOLD, 0.32, 4)
+        self.fx.add_ring(self.player_node.x, self.player_node.y,
+                         10, 90, GOLD, 0.4, 3)
+        self.fx.add_text(self.player_node.x, self.player_node.y - 42,
+                         "PARRY", GOLD, 20, 0.9)
+        self.fx.add_flash(0.08, GOLD, 6)
+        self.fx.add_hitstop(0.05)
+        self.fx.slow(0.35, 0.25)
+        self.toast("振刀：红色攻击引用被剪断")
+        audio.play("alias")
         return True
 
     def do_link(self, a, b, up=False):

@@ -3,6 +3,9 @@ contact_links:
   - name: 贡献指南 / Contributing
     url: https://github.com/Illusion-Countdown/RE-AI/blob/main/CONTRIBUTING.md
     about: 提交代码、分支、测试和 PR 要求
+  - name: 协作规范 / Collaboration
+    url: https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/COLLABORATION.md
+    about: 父子 Issue、事件契约、@lead 边界和通知规则
   - name: 路线图 / Roadmap
     url: https://github.com/Illusion-Countdown/RE-AI/blob/main/ROADMAP.md
     about: 先看当前版本做什么、不做什么

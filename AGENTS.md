@@ -9,6 +9,7 @@
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+- [`docs/COLLABORATION.md`](docs/COLLABORATION.md)（创建/修改 Issue、父子任务、@ 通知时必读）
 - [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md)（涉及事件名时必读）
 - [`docs/LABELS.md`](docs/LABELS.md)（涉及 Issue / PR 标签时必读）
 
@@ -65,6 +66,11 @@ Get-Command gh
 - 创建子 Issue 时，在正文或回复中写清父 Issue 编号（如 `Parent: #12`）。
 - 关联已有 Issue 为子 Issue 时，确认父子关系，不要顺带关闭父 Issue。
 - 不要批量创建重复 Issue；先搜索现有 Issue 和 Roadmap。
+- 多角色需求：父 Issue + 每个角色一个子 Issue；父 Issue 只放子 Issue 链接和 Owner，**不 @A/B/C/D**。
+- 子 Issue 用 Assignee 通知 Owner；一个子 Issue 一个 Owner、一个目录、一个 PR。
+- 只在公共接口、事件总线、跨 Owner schema、语义/范围冲突时 `@lead`；事件名按 [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md) 自助注册，不要为起名 @lead。
+- 代码 PR 合并后，由父 Issue Owner 或代码作者给 D 开文档 Issue；Lead 不默认代写。文档必须随代码合并时，D 作为合并前子 Issue。
+- 完整流程和模板见 [`docs/COLLABORATION.md`](docs/COLLABORATION.md)。
 
 ## 5. 分支、提交与 PR
 
@@ -99,7 +105,8 @@ PR 描述至少包含：
 
 要求：
 
-- 一个 PR 只做一件事
+- 一个 PR 只做一件事；多角色需求按子 Issue 拆 PR
+- PR 写 `Parent: #父`（单点需求写 `Parent: 无`），并写清事件契约
 - 未完成时用 Draft PR
 - 推送前跑相关测试；代码改动跑 `python tools/run_all.py`
 - 等 CI `CI / test` 通过再请求合并

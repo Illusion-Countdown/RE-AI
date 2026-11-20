@@ -158,6 +158,10 @@ tools/           架构/机制/房间/流程/教程/界面/拖拽/音频回归
 
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 
+多角色如何拆父/子 Issue、互相提需求、`@lead` 边界：
+
+- [`docs/COLLABORATION.md`](docs/COLLABORATION.md)
+
 新增功能如何提需求：
 
 - [`docs/FEATURE_REQUESTS.md`](docs/FEATURE_REQUESTS.md)
@@ -194,7 +198,7 @@ python tools/screens_test.py
 ## 参与贡献
 
 1. 先看 [`CONTRIBUTING.md`](CONTRIBUTING.md) 和 [`ROADMAP.md`](ROADMAP.md)。
-2. 新功能先开 Issue，不要直接写大 PR。
+2. 新功能先开 Issue；多角色需求按 [`docs/COLLABORATION.md`](docs/COLLABORATION.md) 拆父/子 Issue，不要直接写大 PR。
 3. Bug 请附 `crash.log`、复现步骤、系统和 Python/pygame 版本。
 4. PR 必须说明改了什么、怎么测、影响哪些文件。
 5. 遵守 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)。

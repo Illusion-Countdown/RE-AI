@@ -8,6 +8,7 @@ Alpha 阶段不保证存档/接口兼容。
 ### Added
 
 - 新增事件命名规范 `docs/EVENT_NAMING.md`、唯一注册表 `memory_run/events.py` 与自动检查 `tools/events_test.py`
+- 新增协作规范 `docs/COLLABORATION.md` 与“协作子任务”Issue 模板：父子 Issue、队友互提需求、事件契约、`@lead` 边界
 
 ### Changed
 

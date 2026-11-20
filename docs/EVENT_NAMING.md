@@ -135,6 +135,8 @@ BATTLE_TURN_START = "BATTLE_TURN_START"
 
 5. 提 PR。**不需要先问 Lead 叫什么名字**。
 
+Issue 里怎么写事件契约、谁来发/谁监听，见 [`COLLABORATION.md`](COLLABORATION.md#5-事件契约)。
+
 ---
 
 ## 5. Review 清单（60 秒）

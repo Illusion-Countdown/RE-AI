@@ -5,6 +5,7 @@
 | 文档 | 用途 |
 |---|---|
 | [DEVELOPMENT.md](DEVELOPMENT.md) | 代码结构、分层规则、文件所有权、接口、测试、提交流程 |
+| [COLLABORATION.md](COLLABORATION.md) | 父子 Issue、队友互提需求、事件契约、@lead 边界、通知规则 |
 | [EVENT_NAMING.md](EVENT_NAMING.md) | 事件命名规则、公共注册表、Review 清单 |
 | [CONTENT.md](CONTENT.md) | 当前卡牌、模块、敌人、Boss、房间、经济、音频清单 |
 | [FEATURE_REQUESTS.md](FEATURE_REQUESTS.md) | 新功能一页式需求模板、A/B/C/D 拆单、验收写法 |
@@ -14,6 +15,7 @@
 ## 维护约定
 
 - 改代码结构/所有权/流程 → `DEVELOPMENT.md`
+- 改协作/Issue/通知规则 → `COLLABORATION.md`
 - 新增/修改跨层事件名 → `EVENT_NAMING.md`
 - 加卡/敌人/房间/模块 → `CONTENT.md`
 - 提新玩法 → `FEATURE_REQUESTS.md`

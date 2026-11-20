@@ -70,8 +70,12 @@ python tools/run_all.py
    - 验收标准
 2. 维护者确认范围和优先级（标签规则见 [`docs/LABELS.md`](docs/LABELS.md)）。
 3. 需要跨层时拆成 A/B/C/D 小任务（内容、战斗、UI、测试）。
+   - 多角色需求开父 Issue + 子 Issue；父 Issue 不 @队友，子 Issue 用 Assignee 通知。
+   - 队友之间直接互提子 Issue，不需要通过 Lead 传话。
+   - 完整模板见 [`docs/COLLABORATION.md`](docs/COLLABORATION.md)。
 4. 需要改公共接口时，先由维护者冻结接口。
    - 例外：新增跨层事件名不需要事先审批；按 [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md) 自己起名、写进 `memory_run/events.py`，在同一个 PR 里接线即可。
+   - 只有事件总线、公共 API、跨 Owner schema 或语义冲突才 `@lead`。
 5. 再提交 PR。
 
 详细模板见 [`docs/FEATURE_REQUESTS.md`](docs/FEATURE_REQUESTS.md)。
@@ -184,9 +188,13 @@ PR 描述必须包含：
 ```text
 ## 改了什么
 ## 为什么
+## 事件契约（没有写“无”）
 ## 怎么测
 ## 影响范围
+## 关联 Issue
 ## 截图 / 录屏（UI 改动必须）
+
+Parent: #父
 ```
 
 合并前：
@@ -194,6 +202,8 @@ PR 描述必须包含：
 - [ ] `python tools/run_all.py` 通过
 - [ ] 没有新增 `crash.log`
 - [ ] 没有跨领地大改
+- [ ] 一个 PR 只做一个子 Issue
+- [ ] 已写 `Parent: #父`（单点需求写 `Parent: 无`）
 - [ ] 文档/注释同步
 - [ ] UI 改动附截图
 - [ ] 数值改动附数据或理由

@@ -105,6 +105,13 @@ python tools/architecture_test.py
 | **D 平台与 QA** | 音频、崩溃、测试、性能、CI、发布、文档汇总 | 玩法逻辑、UI 布局 |
 | **Lead** | 接口、`app.py`、`const.py`、合并、版本、验收 | 不替队友写整块 |
 
+协作 Issue 规则见 [`COLLABORATION.md`](COLLABORATION.md)：
+
+- 多角色需求：父 Issue + A/B/C/D 子 Issue
+- 父 Issue 只放子 Issue 链接和 Owner，不 @队友
+- 子 Issue 用 Assignee 通知；一个子 Issue 一个 Owner、一个目录、一个 PR
+- 只在公共接口、事件总线、跨 Owner 决策时 `@lead`；事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自助注册
+
 ---
 
 ## 5. 依赖
@@ -263,8 +270,10 @@ PR 必须写：
 
 - 改了什么
 - 为什么
+- 事件契约（没有写“无”）
 - 怎么测
 - 影响哪些文件
+- 关联 Issue，以及 `Parent: #父`（单点需求写 `Parent: 无`）
 - UI 截图（如适用）
 
 不要：
@@ -354,6 +363,7 @@ content/procgen/
 
 - 内容改动 → `docs/CONTENT.md`
 - 结构/所有权/流程 → 本文件
+- 协作 Issue / 通知 / @lead 边界 → `docs/COLLABORATION.md`
 - 路线/版本 → `ROADMAP.md` / `CHANGELOG.md`
 - 新功能需求 → `docs/FEATURE_REQUESTS.md`
 - 设计历史 → `docs/DESIGN.md`

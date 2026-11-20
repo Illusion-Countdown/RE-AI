@@ -1,0 +1,84 @@
+name: 协作子任务
+description: A/B/C/D 单角色任务，关联父 Issue
+title: "[A/B/C/D]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先读[协作规范](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/COLLABORATION.md)和[事件命名规范](https://github.com/Illusion-Countdown/RE-AI/blob/main/docs/EVENT_NAMING.md)。
+
+        父 Issue 里不要 @队友；**Assign 本 Issue 就是通知**。一个子 Issue 只做一个角色、一个目录、一个 PR。
+  - type: input
+    id: parent
+    attributes:
+      label: 父 Issue
+      description: 填 `#编号`；单点需求写“无（单点需求）”
+      placeholder: "#11"
+    validations:
+      required: false
+  - type: dropdown
+    id: role
+    attributes:
+      label: 角色
+      description: 只选一个，对应一个 Owner
+      options:
+        - A 内容与数值
+        - B 战斗与逻辑
+        - C UI 与表现
+        - D 测试、音频与文档
+        - Lead 接口与架构
+    validations:
+      required: false
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 具体实现
+      description: 只写本角色负责的部分；要别人配合就另开子 Issue
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: false
+  - type: textarea
+    id: event_contract
+    attributes:
+      label: 事件契约
+      description: 事件名 / 发送方 / 监听方 / payload / 注册人；没有事件写“无”
+      placeholder: |
+        事件名：ENEMY_SPLIT_ON_DEATH
+        发送方：B
+        监听方：C / D
+        payload：source_id, x, y, child_count
+        注册：memory_run/events.py
+    validations:
+      required: false
+  - type: textarea
+    id: verification
+    attributes:
+      label: 验证方法
+      description: 可执行的检查步骤或测试命令
+      placeholder: |
+        python tools/run_all.py
+        概率改 100% / 0% 各测一次
+    validations:
+      required: false
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: 不做
+      description: 明确这次不碰什么，防止范围膨胀
+      placeholder: 不改 UI 特效，不改音频，不做 Boss。
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 已写清 Parent（单点需求写“无”）
+          required: false
+        - label: 事件名遵循 docs/EVENT_NAMING.md；只有事件总线/公共接口才 @lead
+          required: false
+        - label: 本 Issue 只有一个 Owner、一个目录、一个 PR
+          required: false

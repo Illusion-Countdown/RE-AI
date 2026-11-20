@@ -23,6 +23,9 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.t = 0.0
         self.last_quality = 100
         self.trail = []
+        self.hand_last_selected = None
+        self.hand_switch_t0 = -10.0
+        self.hand_switch_dir = 1
 
     def _make_bg(self):
         """整张屏幕都是战场：没有左右栏，也没有顶栏底板。"""

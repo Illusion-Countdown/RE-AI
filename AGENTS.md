@@ -9,6 +9,7 @@
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+- [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md)（涉及事件名时必读）
 - [`docs/LABELS.md`](docs/LABELS.md)（涉及 Issue / PR 标签时必读）
 
 不要凭记忆猜仓库结构、测试命令或标签含义。

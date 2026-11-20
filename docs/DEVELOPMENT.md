@@ -87,6 +87,7 @@ python tools/architecture_test.py
 | `ui/screens.py` / `ui/deckui.py` | C | 界面、整备、商店 |
 | `ui/fx.py` | C | 屏幕 FX |
 | `platform/audio.py` | D | 音频、设备切换 |
+| `memory_run/events.py` | 公共注册表 | 任何人可加事件名；Lead 只审格式/重复 |
 | `tools/*` | D | 测试、回归、性能 |
 | `docs/*` | D 汇总 | Owner 提供内容 |
 
@@ -206,6 +207,28 @@ audio.next_device()
 
 音效名必须先注册在 `platform/audio.py`。
 
+### 事件 / Events
+
+事件名注册表：
+
+```text
+memory_run/events.py
+```
+
+规则见 [`EVENT_NAMING.md`](EVENT_NAMING.md)：
+
+- 格式 `DOMAIN_ACTION[_STATE]`，全大写，2–5 段
+- 常量名与字符串值完全一致
+- 同一个 PR 里注册并使用，不预埋空事件
+- 业务模块只使用 `events.XXX`，不写裸字符串
+- 当前还没有事件总线，注册表暂时为空；第一个跨层事件再按规范接线
+
+检查：
+
+```powershell
+python tools/events_test.py
+```
+
 ---
 
 ## 7. 提交与 PR
@@ -263,6 +286,7 @@ python tools/run_all.py
 包含：
 
 - 分层依赖
+- 事件命名与注册表
 - 机制
 - 18 关清场
 - 教程
@@ -274,6 +298,7 @@ python tools/run_all.py
 单独跑：
 
 ```powershell
+python tools/events_test.py
 python tools/mechanics_test.py
 python tools/rooms_test.py
 python tools/screens_test.py

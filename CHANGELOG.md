@@ -5,6 +5,10 @@ Alpha 阶段不保证存档/接口兼容。
 
 ## [Unreleased]
 
+### Added
+
+- 新增事件命名规范 `docs/EVENT_NAMING.md`、唯一注册表 `memory_run/events.py` 与自动检查 `tools/events_test.py`
+
 ### Changed
 
 - 手牌改为 3 张：初始抽 3，用 1 抽 1，移除自动抽牌、备用/溢出和洗回

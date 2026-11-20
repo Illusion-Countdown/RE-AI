@@ -50,6 +50,7 @@ python tools/run_all.py
 要求：
 
 - 架构检查通过
+- 事件命名/注册表检查通过
 - 机制/房间/流程/教程/界面/拖拽/音频测试通过
 - 不新增 `crash.log`
 - 不破坏 22 个房间的加载
@@ -70,6 +71,7 @@ python tools/run_all.py
 2. 维护者确认范围和优先级（标签规则见 [`docs/LABELS.md`](docs/LABELS.md)）。
 3. 需要跨层时拆成 A/B/C/D 小任务（内容、战斗、UI、测试）。
 4. 需要改公共接口时，先由维护者冻结接口。
+   - 例外：新增跨层事件名不需要事先审批；按 [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md) 自己起名、写进 `memory_run/events.py`，在同一个 PR 里接线即可。
 5. 再提交 PR。
 
 详细模板见 [`docs/FEATURE_REQUESTS.md`](docs/FEATURE_REQUESTS.md)。
@@ -166,6 +168,8 @@ python tools/architecture_test.py
 - 公共函数写 docstring
 - 不引入 numpy / 外部素材 / 网络依赖
 - 不在 UI 的 `draw()` 里改状态
+- 跨层事件名按 [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md) 自己起名，只写在 `memory_run/events.py`
+- 业务模块里不写事件裸字符串，统一用 `memory_run.events` 常量
 - 不在内容数据里写 `if room.code == ...` 战斗分支
 - 能进内容表的数值不要散落在逻辑里
 - 新公开字段写进接口文档

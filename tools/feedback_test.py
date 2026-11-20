@@ -31,6 +31,21 @@ def test_bus():
     assert order[-1] == ("b", 2)
     bus.clear()
     assert bus.subscriber_count() == 0
+
+    # 回调里注销其他监听方时，本次 emit 仍按快照调用，返回值也按快照计数。
+    bus2 = events.EventBus()
+    called = []
+    h2 = None
+
+    def first(p):
+        called.append("a")
+        bus2.unsubscribe("TEST_EVENT_B", h2)
+
+    bus2.subscribe("TEST_EVENT_B", first)
+    h2 = bus2.subscribe("TEST_EVENT_B", lambda p: called.append("b"))
+    assert bus2.emit("TEST_EVENT_B", n=1) == 2
+    assert called == ["a", "b"]
+    assert bus2.subscriber_count("TEST_EVENT_B") == 1
     print("event bus order/remove/clear ok")
 
 

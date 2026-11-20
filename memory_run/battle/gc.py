@@ -14,7 +14,7 @@ class GcMixin:
         if n.data.get("boss") == "gc" and any(
                 p.alive and p.kind == "PYLON" for p in self.graph.nodes):
             self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg,
-                          color=DIM, mode="immune")
+                          color=DIM, mode="immune", shielded=False)
             return
         shielded = False
         if n.data.get("boss") == "auditor" and self.quality() < 75.0:
@@ -27,7 +27,7 @@ class GcMixin:
             pool.sync()
             n.hit_flash = 1.0
             self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg,
-                          color=color, mode="alias")
+                          color=color, mode="alias", shielded=shielded)
             if pool.hp <= 0:
                 self.kill_pool(pool)
             return
@@ -36,7 +36,8 @@ class GcMixin:
         self.stats["dmg"] += dmg
         self.run.stats["dmg"] += dmg
         self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg, color=color,
-                      mode="shielded" if shielded else "normal")
+                      mode="shielded" if shielded else "normal",
+                      shielded=shielded)
         if n.hp <= 0:
             self.kill_node(n, source=source)
 

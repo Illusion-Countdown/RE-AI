@@ -6,7 +6,7 @@
 设计约束：
 - 事件是“已经发生的事实”，不是命令；发送方不 import 监听方。
 - 同一次 emit 内同步调用监听方，保证表现与旧代码同一帧、同一顺序。
-- payload 是只读快照；监听方不要修改游戏状态，也不要长期持有 payload。
+- payload 及其中节点/边引用只读；监听方不要修改游戏状态，也不要长期持有。
 - 总线按战斗创建，不放进全局；战斗结束后随 Battle 一起丢弃。
 """
 
@@ -106,11 +106,11 @@ class EventBus:
         return True
 
     def emit(self, name, **payload):
-        """同步派发；返回实际调用到的监听方数量。"""
-        handlers = self._subs.get(name)
+        """同步派发；返回本次快照中实际调用到的监听方数量。"""
+        handlers = tuple(self._subs.get(name, ()))
         if not handlers:
             return 0
-        for handler in tuple(handlers):
+        for handler in handlers:
             handler(payload)
         return len(handlers)
 

@@ -293,7 +293,10 @@ class RunState:
             self.shards -= item["price"]
             return True, f"{CARD_DEFS[item['key']]['cn']} 已入库"
         if item["kind"] == "module":
-            self.add_module(item["id"])
+            if self.has(item["id"]):
+                return False, "已经拥有这个增幅"
+            if not self.add_module(item["id"]):
+                return False, "无效增幅"
             self.shards -= item["price"]
             return True, "增幅已安装"
         return False, "未知商品"

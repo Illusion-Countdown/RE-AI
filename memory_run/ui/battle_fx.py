@@ -223,7 +223,7 @@ class BattleFx:
         if mode == "immune":
             self.fx.add_text(n.x, n.y - n.r - 14, "IMMUNE", DIM, 14, 0.7)
             return
-        if mode == "shielded":
+        if p.get("shielded") or mode == "shielded":
             self.fx.add_text(n.x, n.y - n.r - 14, "SHIELD", AMBER, 14, 0.6)
         self.fx.add_text(n.x, n.y - n.r, f"-{int(dmg)}", color, 15, 0.6)
         if mode != "alias":

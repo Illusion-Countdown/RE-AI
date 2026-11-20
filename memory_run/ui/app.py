@@ -399,6 +399,9 @@ class App:
         b = self.battle
         if b is None:
             return
+        if ev.type == pygame.MOUSEWHEEL:
+            b.on_wheel(ev.y)
+            return
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_ESCAPE:
                 self.state = "pause"

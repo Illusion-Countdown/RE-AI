@@ -157,6 +157,14 @@ b2.on_key(pygame.K_LSHIFT)
 assert b2.selected == 0
 print("shift previous card ok")
 
+# wheel up = previous, wheel down = next
+b2.state = "playing"
+b2.on_wheel(-1)
+assert b2.selected == 1
+b2.on_wheel(1)
+assert b2.selected == 0
+print("wheel card switching ok")
+
 # non-connection card can be released without a target
 b2.state = "playing"
 b2.work_used = 0.0

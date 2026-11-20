@@ -29,6 +29,11 @@ class InputMixin:
                             "stage": 0, "src": None}
                 return
 
+    def on_wheel(self, dy):
+        if self.state != "playing" or not dy:
+            return
+        self.cycle_card(-1 if dy > 0 else 1)
+
     # 拖拽：按住手牌 -> 拖到世界 -> 松开
 
     def card_in(self, where, idx):

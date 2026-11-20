@@ -36,6 +36,7 @@ class RunState:
         self.bosses_cleared = 0
         self.rooms_cleared = 0
         self.perfects = 0
+        self.grid_bonus = 0
         self.rd_choice = 0             # 0 高保真 / 1 平衡 / 2 低码率
         self.deck.rd_cap = (100, 75, 50)[self.rd_choice]
         self.stats = {
@@ -81,6 +82,7 @@ class RunState:
             if r["id"] == rid and not self.has_rule(rid):
                 self.rules.append(r)
                 if rid == "grid":
+                    self.grid_bonus += 1
                     self._expand(1, 1)
                 return True
         return False
@@ -154,7 +156,10 @@ class RunState:
 
     def _expand_after_boss(self):
         idx = min(len(EXPANSIONS) - 1, self.bosses_cleared)
-        w, h = EXPANSIONS[idx]
+        base_w, base_h = EXPANSIONS[idx]
+        # 网格规则是持久的额外 +1；Boss 扩容不能把已有的更大网格缩回去。
+        w = max(self.deck.grid.w, min(7, base_w + self.grid_bonus))
+        h = max(self.deck.grid.h, min(7, base_h + self.grid_bonus))
         self._expand_to(w, h)
 
     def _expand(self, dw, dh):
@@ -321,9 +326,9 @@ class RunState:
         return price
 
     def make_module_rewards(self, count=3):
+        """只返回尚未拥有的模块；后期池不足时允许少于 3 个。"""
         pool = [m for m in MODULE_POOL if not self.has(m)]
         self.rng.shuffle(pool)
-        if len(pool) < count:            pool += [m for m in MODULE_POOL if m not in pool]
         return pool[:count]
 
     def make_rule_rewards(self):

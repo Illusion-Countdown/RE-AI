@@ -552,7 +552,7 @@ def draw_tutorial_end(screen):
               "每次清房三选一卡牌，每两房三选一模块，Boss 后进入安全屋整备。"
               "卡组会越来越重，画质会越来越低——你要决定带什么、留多少空。",
               (W // 2, 330), 17, WHITE, 760, 26, anchor="midtop")
-    blit_text(screen, "教程奖励：纠错码 ×1  ·  碎片 +3", (W // 2, 470), 14,
+    blit_text(screen, "教程奖励：纠错码 ×1  ·  碎片 +1", (W // 2, 470), 14,
               GOLD, anchor="center")
     out = {}
     out["run"] = button(screen, (540, 530, 250, 54), "进入正式远征", CYAN, size=18)

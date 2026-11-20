@@ -177,17 +177,26 @@ class App:
         if self.pending_boss:
             self.choice_mode = "rule"
             self.reward_options = self.run.make_rule_rewards()
+            if not self.reward_options:
+                self.open_prep("postreward", "所有 Boss 规则已拥有：直接整备。")
+                return
             self.state = "rule"
         elif self.pending_module:
             self.choice_mode = "module"
             self.reward_options = self.run.make_module_rewards()
+            if not self.reward_options:
+                self.open_prep("postreward", "所有增幅已拥有：直接整备。")
+                return
             self.state = "module"
         else:
             self.open_prep("postreward", "奖励已入库：先整备，再继续下一关。")
             self.notice = "整备后点「开始战斗」继续"
 
     def choose_module(self, idx):
-        self.run.add_module(self.reward_options[idx])
+        mid = self.reward_options[idx]
+        if not self.run.add_module(mid):
+            self.notice = "这个增幅已经拥有了"
+            return
         audio.play("alias")
         self.open_prep("postreward", "增幅已安装：整备后继续。")
 
@@ -254,7 +263,7 @@ class App:
         elif self.state == "pause":
             self.ev_pause(ev)
         elif self.state == "reward":
-            self.ev_choice(ev, "card")
+            self.ev_choice(ev, self.choice_mode)
         elif self.state == "module":
             self.ev_choice(ev, "module")
         elif self.state == "rule":
@@ -304,8 +313,7 @@ class App:
                 if self.editor.held:
                     self.editor.key(ev.key)
                 elif self.prep_context == "reward":
-                    self.prep_context = "initial"
-                    self.state = "reward"
+                    self.return_to_reward()
                 elif self.prep_context == "postreward":
                     self.deck_start()
                 elif self.safehouse:
@@ -320,6 +328,12 @@ class App:
                 self.editor.release(ev.pos)
             return
         if ev.type == pygame.MOUSEBUTTONDOWN:
+            # 右键只用于把拿起的卡放回；不要在持卡时触发按钮或开战。
+            if ev.button == 3 and self.editor.held is not None:
+                self.editor.click(ev.pos, 3)
+                return
+            if ev.button != 1 or self.editor.held is not None:
+                return
             k = self._hit(ev.pos)
             if k == "start":
                 self.deck_start()
@@ -341,15 +355,13 @@ class App:
                 return
             if k == "back":
                 if self.prep_context == "reward":
-                    self.prep_context = "initial"
-                    self.state = "reward"
+                    self.return_to_reward()
                 elif self.prep_context == "postreward":
                     self.deck_start()
                 else:
                     self.state = "title"
                 return
-            if ev.button in (1, 3):
-                self.editor.click(ev.pos, ev.button)
+            self.editor.click(ev.pos, 1)
 
     def enter_shop(self, from_state="deck"):
         self.shop_from = from_state
@@ -381,6 +393,12 @@ class App:
         self.editor = DeckEditor(self.run)
         self.editor.say(msg or "整备：拖卡入网格、同名卡互拖免费升级、修坏死格、进商店。")
 
+    def return_to_reward(self):
+        """从奖励前整备回到正确的奖励类型，而不是一律回 card。"""
+        self.prep_context = "initial"
+        self.state = {"rule": "rule", "module": "module"}.get(
+            self.choice_mode, "reward")
+
     def deck_start(self):
         d = self.run.deck
         if d.grid.free_count() < 1:
@@ -391,8 +409,7 @@ class App:
             return
         audio.play("gcstart")
         if self.prep_context == "reward":
-            self.prep_context = "initial"
-            self.state = "reward"
+            self.return_to_reward()
             return
         if self.prep_context == "postreward":
             self.prep_context = "initial"

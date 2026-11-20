@@ -16,20 +16,22 @@ TESTS = [
     "tutorial_test.py",
     "screens_test.py",
     "drag_test.py",
+    "tool_test.py",
     "audio_test.py",
 ]
 
 
 def main():
     env = dict(os.environ)
-    env.setdefault("SDL_VIDEODRIVER", "dummy")
-    env.setdefault("SDL_AUDIODRIVER", "dummy")
-    env.setdefault("PYTHONIOENCODING", "utf-8")
+    env["SDL_VIDEODRIVER"] = "dummy"
+    env["SDL_AUDIODRIVER"] = "dummy"
+    env["PYTHONIOENCODING"] = "utf-8"
     failed = []
     for name in TESTS:
         path = ROOT / "tools" / name
         if not path.exists():
-            print(f"[skip] {name}")
+            print(f"[missing] {name}")
+            failed.append(name)
             continue
         print(f"\n=== {name} ===", flush=True)
         proc = subprocess.run([sys.executable, str(path)],

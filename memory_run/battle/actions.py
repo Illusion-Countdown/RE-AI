@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import traceback
+
 from .deps import *
 
 class ActionsMixin:
@@ -399,6 +401,7 @@ class ActionsMixin:
             return False
         self.work_used = max(self.work_used, free * (0.9 if not up else 0.95))
         self.compress_t = 12.0 if (up or self.run.has("compressor")) else 8.0
+        self.compress_up = bool(up)
         self.toast("压缩：工作内存拉到 90%，伤害提升，画质正在掉")
         self.bus.emit(events.BATTLE_COMPRESS, player=self.player_node)
         return True

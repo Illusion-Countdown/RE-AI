@@ -24,6 +24,8 @@ class DeckEditor:
         self.cell = 80
         self.tray_rects = []
         self.buttons = {}
+        self.reg_rects = {}
+        self.rd_rects = []
         self.tray_scroll = 0
         self.sell_rect = pygame.Rect(1320, 690, 220, 64)
         self._layout()

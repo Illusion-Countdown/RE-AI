@@ -2,6 +2,7 @@
 from memory_run.const import *
 
 PLAYER_R = 13
+WRITE_RANGE = 360
 DEFAULT_HP = {
     "MINION": 24, "SENTINEL": 60, "CYCLER": 50, "ALLOCATOR": 70,
     "WARD": 50, "BOMB": 20, "PYLON": 80,

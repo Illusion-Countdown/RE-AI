@@ -13,7 +13,7 @@ from memory_run.app import App
 from memory_run.cards import CARD_DEFS
 from memory_run.content import ROOMS, BOSS_RULES
 from memory_run.core.cards import Deck
-from memory_run.battle.constants import DEFAULT_HP
+from memory_run.battle.constants import DEFAULT_HP, WRITE_RANGE
 
 # content consistency
 zones = {
@@ -180,6 +180,30 @@ b2.aim_selected()
 b2.on_mouse_down((10, 10), 1)
 assert b2.hand.slots[1] is link
 print("connection target required ok")
+
+# WRITE has a shorter range: 380 px misses, 320 px hits
+b2.state = "playing"
+shoot = next(n for n in b2.graph.hostiles()
+             if n.alive and not n.data.get("boss"))
+others = [n for n in b2.graph.hostiles() if n.alive and n is not shoot]
+saved = [(n, n.x, n.y) for n in others]
+for n in others:
+    n.x, n.y = 5000, 5000
+px, py = b2.player_node.x, b2.player_node.y
+shoot.x, shoot.y = px + WRITE_RANGE + 40, py
+b2.write_cd = 0
+b2.mouse = (shoot.x, shoot.y)
+hp = shoot.hp
+b2.write_attack()
+assert shoot.hp == hp, "WRITE should miss outside its range"
+shoot.x = px + WRITE_RANGE - 40
+b2.write_cd = 0
+b2.mouse = (shoot.x, shoot.y)
+b2.write_attack()
+assert shoot.hp < hp, "WRITE should hit inside its range"
+for n, x, y in saved:
+    n.x, n.y = x, y
+print("write range ok")
 
 print("MECHANICS OK")
 pygame.quit()

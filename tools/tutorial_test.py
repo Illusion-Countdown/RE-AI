@@ -10,8 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pygame
 
 from memory_run.runstate import RunState
-from memory_run.battle import Battle
-from memory_run.fx import FX
+from memory_run.ui.battle_factory import create_battle
 from memory_run.cards import Card
 from memory_run.model import STRONG
 
@@ -57,7 +56,7 @@ def two_card(b, key, a, c):
 def make(step):
     r = RunState(tutorial=True, seed=5, body_id="tree")
     r.step = step
-    b = Battle(r, FX())
+    b = create_battle(r)
     b.state = "playing"
     b.intro_t = 0
     return b

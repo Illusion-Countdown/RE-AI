@@ -68,7 +68,33 @@ def main():
     a.handle_event(up(ps))
     assert not e.alive, "CUT drag did not cut the target edge"
     assert b.state == "clear", b.state
-    print("SINGLE DRAG OK")
+
+    # CUT++ 拖拽必须走 edges_on_path，一次结算两条边，而不是只取落点一条。
+    a.new_run(True)
+    a.run.step = 1  # T2 的环
+    a.start_battle()
+    b = a.battle
+    b.state = "playing"
+    b.intro_t = 0
+    cut_up = Card("CUT", up=True)
+    b.hand.slots[0] = cut_up
+    b.selected = 0
+    b.aim_selected()
+    a.draw()
+    rr = next(r for r, w, c in a.renderer.hand_rects if c is cut_up)
+    edges = [e for e in b.graph.edges if e.alive]
+    root_edges = [e for e in edges if e.src.kind == "ROOT"]
+    p1 = root_edges[0].points(18)[9]
+    p2 = root_edges[1].points(18)[9]
+    s1 = a.renderer.world_to_screen(p1)
+    s2 = a.renderer.world_to_screen(p2)
+    a.handle_event(down(rr.center))
+    a.handle_event(move(s1))
+    a.handle_event(move(s2))
+    a.handle_event(up(s2))
+    dead = [e for e in edges if not e.alive]
+    assert len(dead) == 2, f"CUT++ should cut exactly 2 edges, got {len(dead)}"
+    print("SINGLE DRAG + CUT++ OK")
     pygame.quit()
 
 

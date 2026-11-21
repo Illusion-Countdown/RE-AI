@@ -3,7 +3,7 @@ from .render_deps import *
 
 
 class HandMixin:
-    def draw_hand(self, screen, b):
+    def draw_hand(self, screen, b, mouse):
         cx = W // 2
         cy = H - 122
         cw, ch = 204, 100
@@ -32,7 +32,7 @@ class HandMixin:
             ox = self.hand_switch_dir * 18 * ease
             oy = rise if selected else 0
             rect = pygame.Rect(int(x + ox), int(cy + oy), cw, ch)
-            hover = bool(card) and rect.collidepoint(b.screen_mouse)
+            hover = bool(card) and rect.collidepoint(mouse)
             if card is None:
                 pygame.draw.rect(screen, (10, 14, 20), rect, border_radius=7)
                 pygame.draw.rect(screen, (36, 46, 58), rect, 1,

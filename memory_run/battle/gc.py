@@ -7,6 +7,9 @@ class GcMixin:
             return
         if n.kind == "ROOT":
             return
+        # 过载是“玩家造成的所有伤害”，统一放在伤害入口，不能只加 WRITE。
+        if self.run.has("overload") and self.quality() < 50:
+            dmg *= 1.15
         if n.data.get("weak_mark"):
             dmg *= 1.35
         if n.data.get("shield_t", 0) > 0:
@@ -23,6 +26,15 @@ class GcMixin:
             shielded = True
         if n.alias:
             pool = n.alias
+            if self.run.has("cow") and not pool.cow_used and dmg < n.hp:
+                # 写时复制：第一次伤害只落在被击中的成员身上，不立刻同步血池。
+                pool.cow_used = True
+                n.hp -= dmg
+                pool.hp = max(0.0, pool.hp - dmg)
+                n.hit_flash = 1.0
+                self.bus.emit(events.BATTLE_DAMAGE, node=n, dmg=dmg,
+                              color=color, mode="alias", shielded=shielded)
+                return
             pool.hp -= dmg
             pool.sync()
             n.hit_flash = 1.0
@@ -176,8 +188,14 @@ class GcMixin:
             return
         self._resolving = True
         self.gc_dirty = False
+        self.gc_cascade_count = 0
         try:
             for _ in range(120):
+                if self.run.has("tail_rec") and self.gc_cascade_count >= 3:
+                    # 尾递归：本次级联只处理前 3 个对象，剩下的留到下次 GC。
+                    self.gc_dirty = False
+                    self.extra_gc = False
+                    break
                 victim = None
                 for n in self.graph.nodes:
                     if not n.alive or n is self.player_node or n.kind == "ROOT":
@@ -208,6 +226,7 @@ class GcMixin:
         count, max_depth = self.graph.subtree_stats(n)
         self._queue_destructor(n, x, y, kind)
         self.graph.remove_node(n)
+        self.gc_cascade_count += 1
         self.apply_shockwave(n, count, max_depth)
         self.clock.add_hitstop(0.012)
         self.bus.emit(events.BATTLE_GC_ERASED, node=n)

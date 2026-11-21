@@ -8,11 +8,13 @@ from .enemies import EnemiesMixin
 
 
 class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
-    def __init__(self, run, fx, bus=None):
+    def __init__(self, run, fx, bus):
+        if bus is None:
+            raise ValueError("Battle requires an EventBus; use ui.battle_factory")
         self.run = run
         self.fx = fx              # 渲染层保留的 FX 句柄
         self.clock = fx           # Battle 只使用时间控制接口
-        self.bus = bus or EventBus()
+        self.bus = bus
         self.room = run.room
         self.graph = Graph()
         self.time = 0.0
@@ -42,7 +44,6 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.returned = 0           # 本房已随机放回牌堆的次数
         self.card_uses = {}         # uid -> 本房使用次数
         self.selected = 1           # 默认选中中间手牌
-        self.screen_mouse = (W // 2, H // 2)
         self.work_used = 0.0
         self.work_regen = self.run.body.get("regen", 1.7)
         self.quality_penalty = 0.0
@@ -57,6 +58,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.cascade_marks = set()
         self.extra_gc = False
         self.gc_dirty = False
+        self.gc_cascade_count = 0
         self._resolving = False
         self.free_gc_used = False
         self.necro_bomb_used = False
@@ -114,8 +116,9 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
             elif kind in ("GC_CORE", "AUDITOR", "KERNEL"):
                 n.r = 40
                 n.data["boss"] = n.data.get("boss", kind.lower())
-                n.collectible = False
-                n.immortal = True
+                # KERNEL 的教程/房间文案明确允许“归零”通关；其它 Boss 保持免疫。
+                n.collectible = kind == "KERNEL"
+                n.immortal = kind != "KERNEL"
             elif kind == "PYLON":
                 n.r = 24
             elif kind == "CRAWLER":
@@ -241,8 +244,6 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         m = 1.0 + self.deck.quality_bonus(q)
         if self.compress_t > 0:
             m += 0.40 if self.compress_up else 0.30
-        if self.run.has("overload") and q < 50:
-            m += 0.15
         per = 0.02 if self.run.has("cascade_bonus") else 0.01
         m += min(0.10, self.erase_streak * per)
         return min(2.0, m)

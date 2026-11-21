@@ -253,18 +253,23 @@ payload 契约见 [`BATTLE_EVENTS.md`](BATTLE_EVENTS.md)。
 - 事件是同步的：`emit` 当场按订阅顺序调用监听方，保证和旧直接调用同一帧
 - payload 及节点/边引用只读；监听方不改战斗状态、不长期持有
 - 总线按战斗创建，不全局复用；避免跨房间订阅泄漏
+- 游戏内总线 `strict=False`：监听器异常记录后继续，不打断已经发生的状态迁移
+- 测试/开发总线 `strict=True`：监听器异常直接暴露
 - 事件只承载表现/音频/反馈，不承载伤害、GC、卡牌结算等确定性规则
+- `Battle` 必须传入事件总线；统一走 `create_battle(run)`，避免“能跑但没有监听器”的静默路径
 
 装配位置：
 
 ```python
-# ui/app.py::start_battle
+# ui/battle_factory.py
 fx = FX()
-bus = EventBus()
+bus = EventBus(strict=False)
 BattleFx(bus, fx)       # C
 BattleAudio(bus)        # D
 battle = Battle(run, fx, bus)
 ```
+
+App 和测试都使用 `create_battle(run)`；不要在测试里直接构造无总线 Battle。
 
 性能边界：
 
@@ -340,7 +345,8 @@ python tools/run_all.py
 - 分层依赖
 - 事件命名与注册表
 - 事件总线、监听器接线与旧表现等价
-- 机制
+- 机制（含 weak_net / cow / tail_rec / WEAK++ / overload / KERNEL）
+- 手牌拖拽 CUT++、震屏坐标
 - 18 关清场
 - 教程
 - 完整流程
@@ -354,6 +360,7 @@ python tools/run_all.py
 python tools/events_test.py
 python tools/feedback_test.py
 python tools/mechanics_test.py
+python tools/mechanics_extra_test.py
 python tools/rooms_test.py
 python tools/screens_test.py
 python tools/audio_test.py

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """无头验证：事件总线、BattleFx/BattleAudio 接线与旧表现等价性。"""
+import contextlib
+import io
 import os
 import sys
 from pathlib import Path
@@ -46,7 +48,25 @@ def test_bus():
     assert bus2.emit("TEST_EVENT_B", n=1) == 2
     assert called == ["a", "b"]
     assert bus2.subscriber_count("TEST_EVENT_B") == 1
-    print("event bus order/remove/clear ok")
+
+    # strict=True 让监听器异常暴露；strict=False 记录后继续派发。
+    strict_bus = events.EventBus(strict=True)
+    strict_bus.subscribe("TEST_EVENT_C", lambda p: 1 / 0)
+    try:
+        strict_bus.emit("TEST_EVENT_C")
+    except ZeroDivisionError:
+        pass
+    else:
+        raise AssertionError("strict bus should propagate listener errors")
+
+    safe_bus = events.EventBus(strict=False)
+    safe_calls = []
+    safe_bus.subscribe("TEST_EVENT_C", lambda p: 1 / 0)
+    safe_bus.subscribe("TEST_EVENT_C", lambda p: safe_calls.append(1))
+    with contextlib.redirect_stderr(io.StringIO()):
+        assert safe_bus.emit("TEST_EVENT_C") == 2
+    assert safe_calls == [1]
+    print("event bus order/remove/clear/isolation ok")
 
 
 def test_clock():

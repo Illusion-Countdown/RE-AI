@@ -345,7 +345,7 @@ class RunState:
         if r.get("tut") == "weak":
             return "强引用环剪不断。用 WEAK 换掉一条边，再剪另一条。"
         if r.get("tut") == "link":
-            return "把 BRUTE 链到自己身上，它就会停火并替你承伤。"
+            return "把 BRUTE 链到自己身上：它停火并分摊 15% 伤害（上限 45%）；玩家边不计 refcount。"
         if r.get("tut") == "cast":
             return "红色虚线是析构器。先 CAST 剥掉，再剪，别让它炸你。"
         return ""

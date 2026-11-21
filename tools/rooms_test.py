@@ -10,8 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pygame
 
 from memory_run.runstate import RunState
-from memory_run.battle import Battle
-from memory_run.fx import FX
+from memory_run.ui.battle_factory import create_battle
 from memory_run.content import RUN_ROOMS, TUTORIAL_COUNT
 
 
@@ -19,7 +18,7 @@ def clear_room(step):
     r = RunState(seed=3, body_id="tree")
     r.step = step
     r.begin_room()
-    b = Battle(r, FX())
+    b = create_battle(r)
     b.state = "playing"
     b.intro_t = 0
     room = r.room

@@ -6,8 +6,8 @@ class HudMixin:
     def draw_ui(self, screen, b, mouse):
         self.draw_top(screen, b)
         self.draw_memory(screen, b)
-        self.draw_hand(screen, b)
-        self.draw_hint(screen, b)
+        self.draw_hand(screen, b, mouse)
+        self.draw_hint(screen, b, mouse)
         self.draw_banner(screen, b)
 
     # ------------------------------------------------------------ 顶部
@@ -115,10 +115,10 @@ class HudMixin:
 
     # ------------------------------------------------------------ 右侧提示
 
-    def draw_hint(self, screen, b):
+    def draw_hint(self, screen, b, mouse):
         hovered = None
         for rect, _where, card in self.hand_rects:
-            if card and rect.collidepoint(b.screen_mouse):
+            if card and rect.collidepoint(mouse):
                 hovered = card
                 break
         card = hovered

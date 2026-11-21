@@ -26,6 +26,7 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.hand_last_selected = None
         self.hand_switch_t0 = -10.0
         self.hand_switch_dir = 1
+        self.cam_offset = (0, 0)
 
     def _make_bg(self):
         """整张屏幕都是战场：没有左右栏，也没有顶栏底板。"""
@@ -52,10 +53,12 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
     # ------------------------------------------------------------ 相机
 
     def screen_to_world(self, pos):
-        return pos
+        ox, oy = self.cam_offset
+        return (pos[0] - ox, pos[1] - oy)
 
     def world_to_screen(self, pos):
-        return pos
+        ox, oy = self.cam_offset
+        return (pos[0] + ox, pos[1] + oy)
 
     # ------------------------------------------------------------ 主绘制
 
@@ -65,14 +68,11 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.card_at = None
         q = b.quality()
         self.last_quality = q
-        b.screen_mouse = mouse
-        b.mouse = mouse
-        b.hover_node = b.node_at(*b.mouse)
-        b.hover_edge = None if b.hover_node else b.edge_at(*b.mouse)
 
         self.world.fill((0, 0, 0, 0))
         self.world.blit(self.bg, (0, 0))
         ox, oy = b.fx.offset()
+        self.cam_offset = (ox, oy)
         self.world.set_clip(ARENA)
         self.draw_world(self.world, b, (ox, oy), b.mouse)
         self.world.set_clip(None)
@@ -109,13 +109,13 @@ class BattleRenderer(WorldMixin, HudMixin, HandMixin):
         self.post.draw(screen, b.fx)
 
         self.draw_ui(screen, b, mouse)
-        self.draw_drag_ghost(screen, b)
+        self.draw_drag_ghost(screen, b, mouse)
 
-    def draw_drag_ghost(self, screen, b):
+    def draw_drag_ghost(self, screen, b, mouse):
         if not getattr(b, "drag_active", False) or not b.aim:
             return
         card = b.aim["card"]
-        mx, my = getattr(b, "screen_mouse", pygame.mouse.get_pos())
+        mx, my = mouse
         r = pygame.Rect(mx - 72, my - 94, 144, 82)
         draw_card(screen, r, card.key, card.up, selected=True, alpha=225)
         blit_text(screen, "松开放下", (r.centerx, r.y - 14), 10,

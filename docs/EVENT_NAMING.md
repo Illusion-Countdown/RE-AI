@@ -112,6 +112,7 @@ BATTLE_TURN_START = "BATTLE_TURN_START"
 - `battle/` 只 `emit`，不 import `ui` / `platform.audio`。
 - `ui/battle_fx.py` 负责视觉，`platform/audio_feedback.py` 负责音频。
 - 总线是同步的，`emit` 当场按订阅顺序执行，表现与旧直接调用同一帧。
+- 游戏内总线 `strict=False`：监听器异常记录后继续；测试/开发用 `strict=True` 让异常暴露。
 - 不预埋没有发送方/接收方的事件；新增事件必须在同一个 PR 里接线。
 
 事件只用于“已经发生的事实”的通知，不用于伤害/GC/卡牌结算等确定性规则。

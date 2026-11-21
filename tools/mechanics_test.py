@@ -15,6 +15,7 @@ from memory_run.content import ROOMS, BOSS_RULES
 from memory_run.core.cards import Deck
 from memory_run.core.model import PARRY
 from memory_run.battle.constants import DEFAULT_HP, WRITE_RANGE
+from memory_run.ui.battle_factory import create_battle
 
 # content consistency
 zones = {
@@ -208,11 +209,9 @@ print("write range ok")
 
 # CUT-triggered GC: depth-based shockwave damages player and corrupts grid
 from memory_run.runstate import RunState
-from memory_run.battle import Battle
-from memory_run.ui.fx import FX
 r3 = RunState(tutorial=False, seed=7, body_id="tree")
 r3.begin_room()
-b3 = Battle(r3, FX())
+b3 = create_battle(r3)
 b3.state = "playing"
 hub = b3.by_id["hub"]
 leaf = b3.by_id["m1"]
@@ -240,7 +239,7 @@ print("gc shockwave ok")
 r4 = RunState(tutorial=False, seed=3, body_id="tree")
 r4.step = 6  # R03, contains a LUNGER
 r4.begin_room()
-b4 = Battle(r4, FX())
+b4 = create_battle(r4)
 b4.state = "playing"
 lunger = b4.by_id["l1"]
 edge = b4.graph.add_edge(lunger, b4.player_node, PARRY, unique=False)

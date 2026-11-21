@@ -47,8 +47,8 @@ ROOMS = [
         N("m2", "MINION", (0.70, 0.72), "MINION.06", 24),
     ], [E("scope", "brute"), E("brute", "m1"), E("brute", "m2")],
         tutorial=True, tut="link",
-        intro="你可以把敌人链接到自己身上：它停火，但你受伤时它分摊 40%。",
-        hint="按 1 选「硬链」，从自己拖到 BRUTE；再剪 SCOPE→BRUTE 的根引用；最后剪断你自己→BRUTE 的边，让它的 refcount 归零。",
+        intro="你可以把敌人链接到自己身上：它停火，并替你分摊 15% 伤害；每多一条 +15%，上限 45%。",
+        hint="按 1 选「硬链」，从自己拖到 BRUTE；再剪 SCOPE→BRUTE 的根引用，BRUTE 会直接归零并 GC。玩家自己的边不计 refcount。",
         tips=["LINK 争夺", "承伤"]),
 
     _room("T4", "DESTRUCTOR", "析构器", 0, [

@@ -11,7 +11,6 @@ import pygame
 
 from memory_run.app import App
 from memory_run.content import TUTORIAL_COUNT
-from memory_run.battle import Battle
 
 
 def tick(app, n=1, dt=1 / 60):

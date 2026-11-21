@@ -71,6 +71,7 @@ Get-Command gh
 - 父 Issue 的 Assignee 是**提需求的人自己**，并**加入 Project**；父 Issue 不放执行 Owner。
 - 子 Issue 的 Assignee 是对应 **Owner**，**不加入 Project**；一个子 Issue 一个 Owner、一个目录、一个 PR。
 - 不知道找哪个 Owner：先问 Lead 或 AI 助手路由，不要猜；功能做不做、范围、优先级由 `@lead` 决定。
+- 分配给你的 Issue 如果无法单独完成，或需要别人同步改动但 Issue 没写清：不要改别人的目录，也不要默默扩大范围；必须开子 Issue 给对方 Owner，写清要改什么、为什么归对方、接口/事件契约、验收和当前阻塞点。
 - 只在公共接口、事件总线、跨 Owner schema、语义/范围冲突、功能取舍时 `@lead`；事件名按 [`docs/EVENT_NAMING.md`](docs/EVENT_NAMING.md) 自助注册，不要为起名 @lead。
 - 代码 PR 合并后，由父 Issue Owner 给 D 开文档 Issue；单点需求由代码作者开；父 Owner 不在时由最后一个合并的子任务 Owner 兜底。Lead 不默认代写。文档必须随代码合并时，D 作为合并前子 Issue。
 - 完整流程和模板见 [`docs/COLLABORATION.md`](docs/COLLABORATION.md)。

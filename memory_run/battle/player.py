@@ -70,9 +70,14 @@ class PlayerMixin:
             if n.alive and n.kind == "QUANTIZER":
                 self.quality_drain += 10.0
             if n.alive:
-                n.data["weak_mark"] = any(
-                    e.alive and e.dst is n and e.kind == WEAK
-                    for e in self.graph.edges)
+                weak = any(e.alive and e.dst is n and e.kind == WEAK
+                           for e in self.graph.edges)
+                if weak and self.run.has("weak_net"):
+                    n.data["weak_seen"] = True
+                n.data["weak_mark"] = (
+                    weak or
+                    (self.run.has("weak_net") and n.data.get("weak_seen", False)) or
+                    n.data.get("weak_forced", False))
                 if n.data.get("shield_t", 0) > 0:
                     n.data["shield_t"] = max(0.0, n.data["shield_t"] - dt)
             if n.stun > 0:

@@ -257,6 +257,9 @@ class InputMixin:
                     if e.hit_test(mx, my, 12):
                         first = i
                         break
+            if first is None and e.hit_test(path[-1][0], path[-1][1], 16):
+                # 拖拽终点直接落在边上：没有穿越段时也要算命中。
+                first = max(0, len(path) - 2)
             if first is not None:
                 found.append((first, e))
         found.sort(key=lambda pair: pair[0])

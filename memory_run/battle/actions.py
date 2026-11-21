@@ -103,7 +103,7 @@ class ActionsMixin:
             if not isinstance(target, (list, tuple)) or len(target) < 2:
                 return False
             a, b = target[0], target[1]
-            return self.do_weak(a, b)
+            return self.do_weak(a, b, up)
         if key == "CLIP":
             return self.do_clip(target, up)
         if key == "SWEEP":
@@ -246,9 +246,12 @@ class ActionsMixin:
             self.work_used = max(0.0, self.work_used - 1)
         return True
 
-    def do_weak(self, a, b):
+    def do_weak(self, a, b, up=False):
         if a is None or b is None or a is b or not a.alive or not b.alive:
             return False
+        if up:
+            a.data["weak_forced"] = True
+            b.data["weak_forced"] = True
         strong = self.graph.between(a, b, STRONG)
         weak = self.graph.between(a, b, WEAK)
         if weak:

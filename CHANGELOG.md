@@ -16,6 +16,8 @@ Alpha 阶段不保证存档/接口兼容。
 - 顿帧/慢放拆到 `battle/clock.py`，`Battle` 只依赖窄时钟接口
 - 新增 `tools/feedback_test.py`，检查事件订阅、监听器接线、CUT 表现和战斗层无直接 FX/audio 调用
 - 新增 `docs/BATTLE_EVENTS.md`，记录 57 个战斗事件的 payload 契约
+- `Battle` 必须通过 `ui/battle_factory.create_battle()` 创建；App 和测试统一走同一套总线接线
+- `EventBus` 增加 strict 模式：游戏内记录监听器异常并继续，测试/开发可严格抛出
 - 手牌改为 3 张：初始抽 3，用 1 抽 1，移除自动抽牌、备用/溢出和洗回
 - 每张卡每房第一次使用后随机放回牌堆，第二次使用后本房耗尽；下一房重置
 - 战斗界面改为全屏战场 + 透明浮层；手牌居中，选中牌高亮
@@ -45,6 +47,12 @@ Alpha 阶段不保证存档/接口兼容。
 - 修正屏障音效、ALIAS 受伤音效、GC 路径绕过异常捕获
 - 修正网格扩容规则被下一次 Boss 扩容覆盖、模块奖励补入已拥有模块
 - 修正 COMPRESS++ 伤害倍率、教程奖励文案、`run_all` 漏跑 `tool_test`
+- 修正从手牌拖 edge 卡只结算落点一条边；CUT++ 现在一次剪两条
+- 渲染不再覆盖 `battle.mouse`/悬停状态，震屏偏移纳入输入坐标换算
+- 实装 `weak_net` 持续可见、`cow` 首次伤害不同步血池、`tail_rec` 三级联上限
+- 实装 WEAK++ 双目标标记、`overload` 全伤害、KERNEL 可 GC 归零
+- 修正 T3 教程文案与实际 15%/45% 承伤、玩家边不计 refcount 一致
+- 协作规范增加“无法独立完成或需要未写明的跨人改动时，必须给对应 Owner 开子 Issue 并写清细节”的硬规则
 - 房间 `zone` 统一为 0（教学）/ 1–5（正式区）
 - 移除无效果的 `discount` Boss 规则
 - `perfect` 规则改为真正的碎片奖励翻倍（2 → 4）

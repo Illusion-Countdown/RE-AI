@@ -28,7 +28,7 @@ MODULES = [
     {"id": "dead_code", "name": "死代码消除", "en": "DEAD.CODE", "color": CYAN,
      "desc": "每房间一次（T）：全场敌人停火 3 秒。", "tag": "控场"},
     {"id": "cow", "name": "写时复制", "en": "COW", "color": BLUE,
-     "desc": "ALIAS 组第一次受伤不共享。", "tag": "别名"},
+     "desc": "ALIAS 组第一次受伤只作用于被击中的成员，不立即同步血池。", "tag": "别名"},
     {"id": "tail_rec", "name": "尾递归", "en": "TAIL.REC", "color": TEAL,
      "desc": "GC 级联超过 3 个对象后停止继续级联。", "tag": "GC"},
 ]

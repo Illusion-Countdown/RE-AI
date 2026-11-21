@@ -9,6 +9,7 @@
 - payload 及其中节点/边引用只读；监听方不要修改游戏状态，也不要长期持有。
 - 总线按战斗创建，不放进全局；战斗结束后随 Battle 一起丢弃。
 """
+import traceback
 
 # --- 战斗开始 / 手牌 ---
 BATTLE_DECK_ONLINE = "BATTLE_DECK_ONLINE"
@@ -84,10 +85,11 @@ class EventBus:
     监听方按订阅顺序同步执行；发送方不会知道监听方是谁。
     """
 
-    __slots__ = ("_subs",)
+    __slots__ = ("_subs", "strict")
 
-    def __init__(self):
+    def __init__(self, strict=True):
         self._subs = {}
+        self.strict = strict
 
     def subscribe(self, name, handler):
         self._subs.setdefault(name, []).append(handler)
@@ -106,12 +108,23 @@ class EventBus:
         return True
 
     def emit(self, name, **payload):
-        """同步派发；返回本次快照中实际调用到的监听方数量。"""
+        """同步派发；返回本次快照中实际调用到的监听方数量。
+
+        strict=True 时监听器异常向上抛（测试/开发用）；
+        游戏内总线使用 strict=False，记录异常后继续派发，避免一个表现
+        监听器把已经完成的战斗状态迁移打断。
+        """
         handlers = tuple(self._subs.get(name, ()))
         if not handlers:
             return 0
         for handler in handlers:
-            handler(payload)
+            try:
+                handler(payload)
+            except Exception:
+                if self.strict:
+                    raise
+                print(f"[event] listener failed: {name}", flush=True)
+                traceback.print_exc()
         return len(handlers)
 
     def clear(self):

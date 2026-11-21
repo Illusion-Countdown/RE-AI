@@ -9,15 +9,11 @@ import traceback
 import pygame
 
 from memory_run.const import *
-from memory_run.events import EventBus
 from memory_run.platform import audio
-from memory_run.platform.audio_feedback import BattleAudio
 from memory_run.core.cards import CARD_DEFS
 from memory_run.content import TUTORIAL_COUNT, RUN_ROOMS
-from memory_run.ui.battle_fx import BattleFx
-from memory_run.ui.fx import FX
+from memory_run.ui.battle_factory import create_battle
 from memory_run.run.runstate import RunState
-from memory_run.battle.battle import Battle
 from memory_run.ui.deckui import DeckEditor
 from memory_run.ui.render import BattleRenderer
 from memory_run.ui.screens import (
@@ -91,12 +87,7 @@ class App:
             self.end_run(True)
             return
         self.run.begin_room()
-        fx = FX()
-        bus = EventBus()
-        # 先接监听器再构造 Battle，确保 DECK ONLINE 等开局事件不会漏掉。
-        BattleFx(bus, fx)
-        BattleAudio(bus)
-        self.battle = Battle(self.run, fx, bus)
+        self.battle = create_battle(self.run)
         self.state = "battle"
         self._finished_handled = False
         self.result = None
@@ -430,14 +421,19 @@ class App:
                 return
             b.on_key(ev.key, pygame.key.get_mods())
         elif ev.type == pygame.MOUSEMOTION:
-            b.screen_mouse = ev.pos
-            b.on_mouse_move(self.renderer.screen_to_world(ev.pos))
+            world = self.renderer.screen_to_world(ev.pos)
             if self.card_press is not None:
                 sx, sy = self.card_press["pos"]
                 if abs(ev.pos[0] - sx) + abs(ev.pos[1] - sy) > 8:
                     self.card_press["moved"] = True
+                if (self.card_press["moved"]
+                        and self.card_press["card"].d["target"] == "edge"
+                        and b.edge_drag is None):
+                    # 从手牌拖 edge 卡时，从按下点开始划线，松开走 edges_on_path。
+                    b.edge_drag = self.card_press["world"]
+                    b.slash = [self.card_press["world"]]
+            b.on_mouse_move(world)
         elif ev.type == pygame.MOUSEBUTTONDOWN:
-            b.screen_mouse = ev.pos
             world = self.renderer.screen_to_world(ev.pos)
             # 按住手牌：先预览，松开时再决定是点击还是拖拽
             for rect, where, card in self.renderer.hand_rects:
@@ -445,8 +441,10 @@ class App:
                     kind, idx = where
                     self.card_press = {"where": kind, "idx": idx or 0,
                                        "card": card, "pos": ev.pos,
-                                       "moved": False}
+                                       "world": world, "moved": False}
                     b.preview_card(kind, idx or 0)
+                    b.edge_drag = None
+                    b.slash = []
                     audio.play("ui")
                     return
             if ev.button == 3:
@@ -454,7 +452,6 @@ class App:
                 b.drag_active = False
             b.on_mouse_down(world, ev.button, pygame.key.get_mods())
         elif ev.type == pygame.MOUSEBUTTONUP:
-            b.screen_mouse = ev.pos
             world = self.renderer.screen_to_world(ev.pos)
             if self.card_press is not None:
                 press = self.card_press
@@ -464,7 +461,11 @@ class App:
                     over_hand = any(r.collidepoint(ev.pos)
                                     for r, _w, _c in self.renderer.hand_rects)
                     if over_hand or BOTTOM.collidepoint(ev.pos):
+                        b.edge_drag = None
+                        b.slash = []
                         b.aim_selected()
+                    elif press["card"].d["target"] == "edge" and b.edge_drag is not None:
+                        b.on_mouse_up(world, 1, pygame.key.get_mods())
                     else:
                         b.drop_card_at(world)
                 else:
@@ -570,7 +571,8 @@ class App:
         # 按住鼠标中键减速；Shift 已改为切换上一张牌
         plan = pygame.mouse.get_pressed()[1]
         return {"mvx": mvx, "mvy": mvy, "dash": dash,
-                "plan": plan, "mouse": pygame.mouse.get_pos()}
+                "plan": plan,
+                "mouse": self.renderer.screen_to_world(pygame.mouse.get_pos())}
 
     # ================================================================ 绘制
     def draw(self):

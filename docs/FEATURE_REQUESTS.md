@@ -67,6 +67,7 @@ WEAK / LINK / GC / 护盾 / ALIAS / 坏死格 / 画质 / Boss 免疫？
 - 父 Issue Assign 给提需求的人自己，加入 Project；只写子 Issue 链接和 Owner，不 `@` 队友。
 - 子 Issue Assign 给 Owner，不加入 Project；队友的通知放在子 Issue。
 - 不知道找哪个 Owner 先问 Lead/AI；功能做不做、范围、优先级由 Lead 决定。
+- 无法独立完成，或需要别人同步改动但原 Issue 没写清：开子 Issue 给对应 Owner，写清具体改动、接口/事件契约、验收和阻塞点，不要改别人的目录。
 - 事件名按 [`EVENT_NAMING.md`](EVENT_NAMING.md) 自己定；只有事件总线/公共接口才 `@lead`。
 
 完整模板和通知矩阵见 [`COLLABORATION.md`](COLLABORATION.md)。

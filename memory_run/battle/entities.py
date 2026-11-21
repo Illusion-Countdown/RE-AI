@@ -30,6 +30,7 @@ class AliasPool:
         self.max = sum(max(1.0, m.max_hp) for m in members)
         self.hp = sum(max(0.0, m.hp) for m in members)
         self.t = duration
+        self.cow_used = False
         for m in members:
             m.alias = self
 

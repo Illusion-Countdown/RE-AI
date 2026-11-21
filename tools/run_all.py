@@ -11,6 +11,7 @@ TESTS = [
     "events_test.py",
     "feedback_test.py",
     "mechanics_test.py",
+    "mechanics_extra_test.py",
     "rooms_test.py",
     "flow_test.py",
     "tutorial_test.py",

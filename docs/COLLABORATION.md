@@ -28,6 +28,33 @@
 - **父 Issue**：Assign 给**提需求的人自己**，加入 **Project**；父 Issue 不放执行 Owner。
 - **子 Issue**：Assign 给**执行 Owner**，**不加入 Project**。
 
+### 1.1 Issue 标题格式
+
+统一写成：
+
+```text
+[A/B] 简短标题
+```
+
+规则：
+
+- `[]` 是**大致分工**，不是 Assignee 的替代。
+- 主 Owner 写在最前：`[B/C]` 表示 B 主、C 协助。
+- 跨角色最多列 2–3 个；跨全队的 Epic 用 `[A/B/C/D]`。
+- 实际 Assignee 仍然在 GitHub 右侧设置。
+- 标题里不要 @ 人；标题里的 @ 不会触发通知。
+- 标题只写“谁大致负责”，具体任务、验收和依赖写在正文。
+
+示例：
+
+```text
+[B] 分裂逻辑与事件发送
+[A/B] 扩展战斗卡：优先改变引用图结构
+[B/C] 局外 Git 提交图：路线、分支与合流
+[C/B] DeepSeek：战斗形象与特殊机制
+[A/B/C/D] 应用层垂直切片
+```
+
 ---
 
 ## 2. 先判断用哪种 Issue
@@ -56,7 +83,7 @@ Project: 不加入
 ## 3. 父 Issue 模板
 
 ```text
-标题：新敌人：<名字>
+标题：[A/B/C] 新敌人：<名字>
 
 Assignee: 你自己（提需求的人）
 Project: 加入
@@ -325,6 +352,7 @@ Project: 不加入
 [ ] 已读 AGENTS.md、docs/COLLABORATION.md、docs/EVENT_NAMING.md
 [ ] 人类明确要求创建/修改 Issue 或 PR
 [ ] 已搜索重复 Issue
+[ ] 标题有 [A/B] 大致分工，不使用 @ 人
 [ ] 单角色 → 一个子 Issue；多角色 → 父 + 子
 [ ] 父 Issue Assign 给提需求的人自己，并加入 Project
 [ ] 父 Issue 没有 @A/B/C/D，只写链接和 Owner

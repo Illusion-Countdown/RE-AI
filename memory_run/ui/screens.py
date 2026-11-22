@@ -5,7 +5,7 @@ import math
 import pygame
 
 from memory_run.const import *
-from memory_run.content import GIRLS, BODIES
+from memory_run.content import GIRLS, GIRL_BY_ID, DEFAULT_GIRL_ID
 from memory_run.core.cards import CARD_DEFS
 from memory_run.ui.render import draw_girl, draw_wrap, wrap
 from memory_run.ui.deckui import draw_option_cards
@@ -24,35 +24,6 @@ def button(screen, rect, label, color=CYAN, sub="", on=True, size=20):
         blit_text(screen, sub, (r.centerx, r.centery + 16), 10, DIM,
                   anchor="center")
     return r
-
-
-def _body_glyph(screen, kind, cx, cy, size, color):
-    """复用 DANGLING 的身体符印。"""
-    if kind == "list":
-        for i in range(4):
-            x = cx - size * 0.75 + i * size * 0.5
-            pygame.draw.circle(screen, color, (int(x), int(cy)),
-                               int(size * 0.16), 2)
-            if i < 3:
-                pygame.draw.line(screen, color, (x + size * 0.16, cy),
-                                 (x + size * 0.34, cy), 2)
-    elif kind == "array":
-        w = size * 0.9
-        for i in range(5):
-            r = pygame.Rect(cx - w / 2 + i * w / 5, cy - size * 0.3,
-                            w / 5 - 4, size * 0.6)
-            pygame.draw.rect(screen, color, r, 2, border_radius=2)
-        pygame.draw.line(screen, color, (cx - w / 2 - 10, cy + size * 0.45),
-                         (cx + w / 2 + 10, cy + size * 0.45), 1)
-    else:
-        pts = [(cx, cy - size * 0.42), (cx - size * 0.42, cy + size * 0.1),
-               (cx + size * 0.42, cy + size * 0.1),
-               (cx - size * 0.22, cy + size * 0.42),
-               (cx + size * 0.22, cy + size * 0.42)]
-        for a, b in ((0, 1), (0, 2), (1, 3), (2, 4)):
-            pygame.draw.line(screen, dim(color, 0.7), pts[a], pts[b], 1)
-        for p in pts:
-            pygame.draw.circle(screen, color, (int(p[0]), int(p[1])), 4)
 
 
 def draw_title_bg(screen, t):
@@ -131,58 +102,55 @@ def draw_endgraph(screen, t, color, alive=True, seed=3):
                              (p[0] + 6, p[1] - 6), (p[0] - 6, p[1] + 6), 1)
 
 
-def draw_title(screen, t, body_id="tree"):
+def draw_title(screen, t, girl_id=DEFAULT_GIRL_ID):
     draw_title_bg(screen, t)
+    girl = GIRL_BY_ID.get(girl_id, GIRLS[0])
     blit_text(screen, "DANGLING // RUN", (90, 86), 13, CYAN, mono=True)
     blit_text(screen, "内存远征", (86, 112), 86, WHITE, bold=True, shadow=3)
     blit_text(screen, "把卡组塞进 5×5 的内存，留白就是你的工作内存。",
               (92, 218), 19, DIM)
     blit_text(screen, "剪断引用，让整片对象归零；画质是你的血，也是你的伤害。",
               (92, 248), 15, DIM2)
-    # AI 娘
-    draw_girl(screen, 1240, 360, 3.0, CYAN, (58, 178, 220), 0, t, portrait=True)
-    blit_text(screen, "小忆", (1240, 560), 28, CYAN, bold=True, anchor="center")
-    blit_text(screen, "DEEPSEEK / 你的向导", (1240, 590), 12, DIM,
+    # 当前自机：AI 娘本人
+    draw_girl(screen, 1240, 360, 3.0, girl["color"], girl["hair"], 0, t,
+              portrait=True)
+    pygame.draw.rect(screen, (6, 8, 12), pygame.Rect(1100, 546, 280, 60),
+                     border_radius=5)
+    blit_text(screen, girl["name"], (1240, 560), 28, girl["color"],
+              bold=True, anchor="center")
+    role = "你的自机 / 向导" if girl["id"] == "deepseek" else "你的自机"
+    blit_text(screen, role, (1240, 590), 12, DIM,
               mono=True, anchor="center")
-    # 四娘
-    for i, g in enumerate(GIRLS):
-        x = 900 + i * 130
-        draw_girl(screen, x, 700, 0.55, g["color"], g["hair"], 0, t + i)
-        blit_text(screen, g["name"], (x, 748), 12, g["color"], anchor="center")
 
     buttons = {}
     buttons["start"] = button(screen, (90, 330, 310, 62), "开始远征",
-                              CYAN, "5 区 18 战（含 5 Boss）", size=24)
+                              CYAN, "4 名 AI 娘 · 5 区 18 战", size=24)
     buttons["tutorial"] = button(screen, (90, 406, 310, 52), "新手教程",
                                  GREEN, "4 个短房间，逐条教机制", size=20)
     buttons["help"] = button(screen, (90, 470, 310, 42), "操作与规则",
                              DIM, size=16)
     buttons["quit"] = button(screen, (90, 524, 310, 42), "退出",
                              DIM, size=16)
-    # 身体选择
-    blit_text(screen, "选择运行时（身体）", (90, 610), 12, DIM, mono=True)
-    for i, b in enumerate(BODIES):
-        r = pygame.Rect(90 + i * 250, 636, 230, 142)
-        on = b["id"] == body_id
+    # AI 娘选择：自机不是数据结构
+    blit_text(screen, "选择 AI 娘", (90, 600), 12, DIM, mono=True)
+    for i, g in enumerate(GIRLS):
+        r = pygame.Rect(90 + i * 300, 624, 270, 152)
+        on = g["id"] == girl_id
         pygame.draw.rect(screen, (13, 17, 25), r, border_radius=6)
-        pygame.draw.rect(screen, b["color"] if on else (38, 48, 60), r,
+        pygame.draw.rect(screen, g["color"] if on else (38, 48, 60), r,
                          2 if on else 1, border_radius=6)
         if on:
-            glow(screen, r.centerx, r.centery, 150, b["color"], 0.18)
-        blit_text(screen, b["name"], (r.x + 12, r.y + 8), 19,
-                  b["color"] if on else WHITE, bold=True)
-        blit_text(screen, b["en"], (r.right - 10, r.y + 12), 8, DIM,
-                  mono=True, anchor="topright")
-        blit_text(screen, f"HP {b['hp']}  SPEED {b['speed']}",
-                  (r.x + 12, r.y + 36), 10, DIM, mono=True)
-        _body_glyph(screen, b["id"], r.right - 42, r.y + 54, 28,
-                    b["color"] if on else DIM)
-        draw_wrap(screen, b["desc"], (r.x + 12, r.y + 58), 11, WHITE,
-                  r.w - 24, 15)
-        buttons[f"body_{b['id']}"] = r
+            glow(screen, r.centerx, r.centery, 150, g["color"], 0.18)
+        draw_girl(screen, r.x + 42, r.y + 62, 0.50, g["color"], g["hair"],
+                  0, t + i)
+        blit_text(screen, g["name"], (r.x + 82, r.y + 12), 20,
+                  g["color"] if on else WHITE, bold=True)
+        draw_wrap(screen, g["line"], (r.x + 82, r.y + 44), 10,
+                  WHITE if on else DIM, r.w - 94, 14)
+        buttons[f"girl_{g['id']}"] = r
         if on:
             blit_text(screen, "SELECTED", (r.right - 10, r.bottom - 14), 8,
-                      b["color"], mono=True, anchor="topright")
+                      g["color"], mono=True, anchor="topright")
     blit_text(screen, "pygame-ce  ·  1600×900  ·  F11 全屏  ·  M 静音  ·  F2 测试  ·  F3 切设备",
               (90, 812), 10, DIM2, mono=True)
     blit_text(screen, "设计依据：08_单人肉鸽_内存远征.md",

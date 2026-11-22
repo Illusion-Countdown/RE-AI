@@ -15,7 +15,7 @@ from memory_run.content import RUN_ROOMS, TUTORIAL_COUNT
 
 
 def clear_room(step):
-    r = RunState(seed=3, body_id="tree")
+    r = RunState(seed=3, girl_id="deepseek")
     r.step = step
     r.begin_room()
     b = create_battle(r)

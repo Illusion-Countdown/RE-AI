@@ -12,6 +12,7 @@
 | [FEATURE_REQUESTS.md](FEATURE_REQUESTS.md) | 新功能一页式需求模板、A/B/C/D 拆单、验收写法 |
 | [LABELS.md](LABELS.md) | Issue / PR 类型标签与五级优先级规则 |
 | [DESIGN.md](DESIGN.md) | 原始设计稿与实现修订记录 |
+| [worldbuilding/RE-AI_世界观设定.md](worldbuilding/RE-AI_世界观设定.md) | 计算机世界五层、AI 娘自机、现有玩法的世界观解释 |
 
 ## 维护约定
 
@@ -23,3 +24,4 @@
 - 提新玩法 → `FEATURE_REQUESTS.md`
 - 改标签/优先级 → `LABELS.md`
 - 改范围/版本 → 根目录 `ROADMAP.md` / `CHANGELOG.md`
+- 改世界观/层/自机身份 → `worldbuilding/RE-AI_世界观设定.md`

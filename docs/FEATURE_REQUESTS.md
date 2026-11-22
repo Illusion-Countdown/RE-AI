@@ -60,6 +60,8 @@ WEAK / LINK / GC / 护盾 / ALIAS / 坏死格 / 画质 / Boss 免疫？
 | `[D] QA` | 新测试、种子/长时模拟、性能、音频 | `run_all` 全绿 |
 | `[Lead] 接口` | 新字段/事件/状态、兼容、合并 | 全量回归 |
 
+Issue 标题统一写成 `[A/B] 简短标题`。`[]` 是**大致分工**，主 Owner 写在最前，实际 Assignee 仍在 GitHub 右侧设置；标题里不要 @ 人。
+
 拆单规则：
 
 - 只动一个角色：直接开一个子 Issue，Assign 给 Owner，不加入 Project。

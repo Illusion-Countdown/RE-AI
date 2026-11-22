@@ -62,6 +62,7 @@ Get-Command gh
 
 - 使用 `.github/ISSUE_TEMPLATE/` 中的表单。
 - 字段虽然都可选，但已知信息要填；不要只写标题就提交。
+- Issue 标题统一为 `[A/B] 简短标题`；`[]` 表示**大致分工**，主 Owner 写在最前，实际 Assignee 仍用 GitHub 右侧；标题里不要 @ 人。
 - 优先级和类型标签按 [`docs/LABELS.md`](docs/LABELS.md) 设置。
 - 一个 Issue 最多一个优先级标签。
 - 创建子 Issue 时，在正文或回复中写清父 Issue 编号（如 `Parent: #12`）。

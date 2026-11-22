@@ -54,7 +54,7 @@ def two_card(b, key, a, c):
 
 
 def make(step):
-    r = RunState(tutorial=True, seed=5, body_id="tree")
+    r = RunState(tutorial=True, seed=5, girl_id="deepseek")
     r.step = step
     b = create_battle(r)
     b.state = "playing"

@@ -115,10 +115,10 @@
 
 | ID | 名字 | 英文 | 定位 |
 |---|---|---|---|
-| `deepseek` | 小忆 | MNEMOSYNE | 青色，教学引导 |
-| `claude` | 克劳 | ARCHITECT | 琥珀，结构派 |
-| `gpt` | 吉皮 | GENESIS | 绿色，引用派 |
-| `glm` | 知澜 | LEAK | 紫色，内存派 |
+| `deepseek` | DeepSeek | DEEPSEEK | 青色，教学引导 |
+| `claude` | Claude | CLAUDE | 琥珀，结构派 |
+| `gpt` | GPT | GPT | 绿色，引用派 |
+| `gemini` | Gemini | GEMINI | 蓝色，多模态视角 |
 
 当前四名 AI 娘共享基础属性：HP 106、速度 268、工作内存回复 1.7。角色专属技能和特性尚未实现。
 

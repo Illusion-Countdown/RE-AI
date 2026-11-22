@@ -119,7 +119,7 @@ def draw_title(screen, t, girl_id=DEFAULT_GIRL_ID):
     blit_text(screen, girl["name"], (1240, 560), 28, girl["color"],
               bold=True, anchor="center")
     role = "你的自机 / 向导" if girl["id"] == "deepseek" else "你的自机"
-    blit_text(screen, f"{girl['en']} / {role}", (1240, 590), 12, DIM,
+    blit_text(screen, role, (1240, 590), 12, DIM,
               mono=True, anchor="center")
 
     buttons = {}
@@ -145,8 +145,6 @@ def draw_title(screen, t, girl_id=DEFAULT_GIRL_ID):
                   0, t + i)
         blit_text(screen, g["name"], (r.x + 82, r.y + 12), 20,
                   g["color"] if on else WHITE, bold=True)
-        blit_text(screen, g["en"], (r.right - 10, r.y + 15), 8, DIM,
-                  mono=True, anchor="topright")
         draw_wrap(screen, g["line"], (r.x + 82, r.y + 44), 10,
                   WHITE if on else DIM, r.w - 94, 14)
         buttons[f"girl_{g['id']}"] = r

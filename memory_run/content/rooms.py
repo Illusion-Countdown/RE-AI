@@ -26,7 +26,7 @@ ROOMS = [
         N("m2", "MINION", (0.70, 0.70), "MINION.03", 20),
     ], [E("scope", "s"), E("s", "m1"), E("s", "m2")],
         tutorial=True, tut="cut",
-        intro="我是小忆。你看到的不是血条，是一张引用图。",
+        intro="我是 DeepSeek。你看到的不是血条，是一张引用图。",
         hint="按 1 选「单剪」，从 SCOPE 划向 SENTINEL 的线。引用归零，它会连同子节点一起被 GC 擦除。",
         tips=["CUT 划边", "GC 级联"]),
 

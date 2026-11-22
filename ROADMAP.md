@@ -89,6 +89,7 @@
 
 - UI 美化第一轮；
 - DeepSeek / Claude 的战斗形象与特殊机制；
+- 运行时层敌人/Boss 精简与机制优化；
 - 现有卡牌调整；
 - 现有 bug、测试、文档收口；
 - GPT / Gemini 在角色选择中锁定。
@@ -97,6 +98,7 @@
 
 - 当前 5 区可通关；
 - DeepSeek / Claude 机制可感知；
+- 运行时层敌人/Boss 精简清单落实；
 - GPT / Gemini 不可选；
 - `python tools/run_all.py` 全绿；
 - 文档与代码一致。

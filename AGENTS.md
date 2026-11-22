@@ -41,6 +41,38 @@ Get-Command gh
 - 使用 `gh auth token` / `--show-token` 展示凭据
 - 把 token 写进 Issue、PR、日志或代码
 
+### 2.1 GitHub API 使用约束
+
+限流不是封号，但**被限流后继续硬刷、并发轰炸或开小号/多 token 绕限**，可能升级为账号处罚。
+
+执行 GitHub API 操作时：
+
+- 批量操作前先看额度：
+
+  ```powershell
+  gh api rate_limit --jq '.resources.core, .resources.search, .resources.graphql'
+  ```
+
+- 不要秒级轮询 PR / CI / Issue；CI 轮询间隔保持 30–60 秒。
+- 优先批量取数据，不要“列表 + 逐条 view”的 N+1 调用。
+- 分页优先 `per_page=100`；不要无边界 `--paginate` 拉全仓库。
+- 只读 GET 可缓存：
+
+  ```powershell
+  gh api repos/Illusion-Countdown/RE-AI/issues/27 --cache 10m
+  ```
+
+- 少用搜索 API（认证后约 30 次/分钟）；能用 `gh issue list` + 本地过滤就不要反复 `--search`。
+- Project / GraphQL 查询较重；不要每次改完都重拉整个 Project。
+- 遇到 `403` / `429` / 二级限流：
+  - 立刻停止；
+  - 读 `Retry-After`、`X-RateLimit-Reset`；
+  - 指数退避；
+  - **不要换 IP、换 token、开小号继续刷**。
+- 网络 reset / 连接失败可以重试；限流和 abuse 提示不要硬重试。
+- Actions 里优先用 `GITHUB_TOKEN`，不要在多个 job 里重复使用个人 PAT。
+- 额度低时，优先改用本地 git / 文件操作，非必要 API 调用延后。
+
 ## 3. 默认操作边界
 
 | 操作 | 默认 |

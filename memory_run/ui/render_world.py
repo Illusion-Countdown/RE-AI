@@ -24,7 +24,7 @@ class WorldMixin:
         self.draw_aim(surf, b, ox, oy, mouse)
         # 节点
         for n in b.graph.nodes:
-            if not n.alive:
+            if not n.alive or n is b.player_node:
                 continue
             self.draw_node(surf, b, n, ox, oy, n is b.hover_node)
         # 子弹
@@ -155,8 +155,10 @@ class WorldMixin:
                                    n.r + 8, 2)
 
     def draw_player(self, surf, b, ox, oy):
-        """直接复用 DANGLING 的 SELF：菱形核心 + 三旋转弧 + 轨迹。"""
+        """绘制 AI 娘自机；数据结构不是玩家。"""
         n = b.player_node
+        girl = b.run.girl
+        col = girl["color"]
         x, y = n.x + ox, n.y + oy
         R = 21
         # 轨迹
@@ -165,7 +167,7 @@ class WorldMixin:
             self.trail.pop(0)
         for i, (tx, ty) in enumerate(self.trail[:-1]):
             a = i / max(1, len(self.trail))
-            pygame.draw.circle(surf, mix((6, 8, 12), CYAN, a * 0.6),
+            pygame.draw.circle(surf, mix((6, 8, 12), col, a * 0.6),
                                (int(tx + ox), int(ty + oy)),
                                max(1, int(a * 3)))
         # 目标指示
@@ -174,41 +176,31 @@ class WorldMixin:
         d = math.hypot(dx, dy) or 1
         if d > 24:
             ex, ey = x + dx / d * 30, y + dy / d * 30
-            pygame.draw.line(surf, with_alpha(CYAN, 70), (x, y), (ex, ey), 1)
-            pygame.draw.circle(surf, with_alpha(CYAN, 120),
+            pygame.draw.line(surf, with_alpha(col, 70), (x, y), (ex, ey), 1)
+            pygame.draw.circle(surf, with_alpha(col, 120),
                                (int(mx), int(my)), 4, 1)
         # 径向脉冲
         pulse = 0.5 + 0.5 * math.sin(self.t * 3)
-        glow(surf, x, y, 54, CYAN, 0.38 + 0.10 * pulse)
-        pygame.draw.circle(surf, with_alpha(CYAN, 60), (int(x), int(y)),
+        glow(surf, x, y, 54, col, 0.38 + 0.10 * pulse)
+        pygame.draw.circle(surf, with_alpha(col, 60), (int(x), int(y)),
                            int(28 + pulse * 6), 1)
-        # 本体
-        pts = [(x, y - R), (x + R * 0.85, y), (x, y + R),
-               (x - R * 0.85, y)]
-        pygame.draw.polygon(surf, (10, 24, 30), pts)
-        pygame.draw.polygon(surf, mix(CYAN, WHITE, 0.3), pts, 2)
-        pygame.draw.circle(surf, WHITE, (int(x), int(y)), 2)
-        # 三弧环
-        ang = self.t * 1.4
-        for i in range(3):
-            a = ang + i * math.tau / 3
-            pygame.draw.arc(surf, with_alpha(CYAN, 170),
-                            (x - 24, y - 24, 48, 48), a, a + 1.1, 2)
+        # 本体：AI 娘
+        draw_girl(surf, x, y + 2, 0.70, col, girl["hair"], 0, self.t)
         # 头顶手牌球：左=上一张，中=当前选中，右=下一张
         order = b.hand_order()
         orbs = [order[2][1], order[0][1], order[1][1]]
-        spots = [(-50, -26), (0, -48), (50, -26)]
+        spots = [(-60, -50), (0, -76), (60, -50)]
         for i, (card, (dx, dy)) in enumerate(zip(orbs, spots)):
             oxp, oyp = x + dx, y + dy
             if card is None:
                 pygame.draw.circle(surf, (26, 34, 44), (int(oxp), int(oyp)),
                                    9, 1)
                 continue
-            col = card.color
-            glow(surf, oxp, oyp, 30, col, 0.36)
-            pygame.draw.circle(surf, dim(col, 0.35), (int(oxp), int(oyp)), 9)
-            pygame.draw.circle(surf, col, (int(oxp), int(oyp)), 9, 2)
-            pygame.draw.circle(surf, mix(col, WHITE, 0.55),
+            c = card.color
+            glow(surf, oxp, oyp, 30, c, 0.36)
+            pygame.draw.circle(surf, dim(c, 0.35), (int(oxp), int(oyp)), 9)
+            pygame.draw.circle(surf, c, (int(oxp), int(oyp)), 9, 2)
+            pygame.draw.circle(surf, mix(c, WHITE, 0.55),
                                (int(oxp), int(oyp)), 3)
             if i == 1:
                 pygame.draw.circle(surf, GOLD, (int(oxp), int(oyp)), 13, 2)
@@ -217,7 +209,7 @@ class WorldMixin:
         if sel is not None:
             name = sel.name
             pw = text_w(name, 10, bold=True) + 34
-            pill = pygame.Rect(int(x - pw / 2), int(y - 90), pw, 20)
+            pill = pygame.Rect(int(x - pw / 2), int(y - 108), pw, 20)
             pygame.draw.rect(surf, (7, 11, 16, 200), pill, border_radius=5)
             pygame.draw.rect(surf, sel.color, pill, 1, border_radius=5)
             icon = pygame.Rect(pill.x + 4, pill.y + 3, 14, 14)
@@ -229,9 +221,9 @@ class WorldMixin:
             pygame.draw.circle(surf, with_alpha(WHITE, a), (int(x), int(y)),
                                R + 7, 1)
         if b.alias_pool:
-            blit_text(surf, "ALIASED", (x, y - 30), 10, MAGENTA,
+            blit_text(surf, "ALIASED", (x, y - 126), 10, MAGENTA,
                       anchor="midtop", mono=True)
-        blit_text(surf, "SELF", (x, y + R + 6), 10, dim(CYAN, 0.9),
+        blit_text(surf, girl["name"], (x, y + 42), 10, dim(col, 0.9),
                   anchor="midtop", mono=True)
 
     def draw_node(self, surf, b, n, ox, oy, hover=False):

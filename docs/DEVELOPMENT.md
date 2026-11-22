@@ -11,7 +11,7 @@
 RE-AI/
 ├─ memory_run/
 │  ├─ core/          Node / Edge / Graph / Card / Grid / Hand
-│  ├─ content/       身体、AI 娘、模块、Boss 规则、卡牌、房间、奖励池
+│  ├─ content/       AI 娘、数据结构（世界内容）、模块、Boss 规则、卡牌、房间、奖励池
 │  ├─ run/           远征状态、经济、商店
 │  ├─ battle/        core / input / actions / gc / player / enemies / clock
 │  ├─ ui/            app / render_* / screens / deckui / fx / battle_fx

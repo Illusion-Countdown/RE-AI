@@ -47,7 +47,7 @@
 | 模块 | 14 个 |
 | 普通敌人 | 12 种 |
 | Boss 规则 | 5 条 |
-| 身体 | 3 种 |
+| AI 娘 | 4 名（自机） |
 | 程序化音效 | 27 个 |
 
 完整内容表见 [`docs/CONTENT.md`](docs/CONTENT.md)。
@@ -142,7 +142,7 @@ python run.py --shots
 run.py
 memory_run/
   core/          Node / Edge / Graph / Card / Grid / Hand
-  content/       身体、AI 娘、模块、Boss 规则、卡牌、房间、奖励池
+  content/       AI 娘、数据结构（世界内容）、模块、Boss 规则、卡牌、房间、奖励池
   run/           远征状态、经济、商店
   battle/        core / input / actions / gc / player / enemies
   ui/            app / render_* / screens / deckui / fx

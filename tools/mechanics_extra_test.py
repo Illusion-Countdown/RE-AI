@@ -12,12 +12,12 @@ import pygame
 from memory_run.app import App
 from memory_run.runstate import RunState
 from memory_run.ui.battle_factory import create_battle
-from memory_run.content import RUN_ROOMS, TUTORIAL_COUNT
+from memory_run.content import RUN_ROOMS, TUTORIAL_COUNT, GIRLS
 from memory_run.core.model import Node, WEAK, STRONG
 
 
 def make_battle(step, module=None):
-    r = RunState(tutorial=False, seed=11, body_id="tree")
+    r = RunState(tutorial=False, seed=11, girl_id="deepseek")
     r.step = TUTORIAL_COUNT + step
     r.begin_room()
     if module:
@@ -37,6 +37,15 @@ def main():
     assert app.renderer.screen_to_world((110, 120)) == (100, 100)
     assert app.renderer.world_to_screen((100, 100)) == (110, 120)
     print("camera offset ok")
+
+    # 自机是 AI 娘，不是数据结构；四名角色当前共享基础属性
+    for g in GIRLS:
+        r = RunState(seed=1, girl_id=g["id"])
+        assert r.girl_id == g["id"]
+        assert r.girl["name"] == g["name"]
+        assert r.max_hp == 106
+        assert not hasattr(r, "body")
+    print("ai girl select ok")
 
     # weak_net: weak target stays visible after the weak edge disappears
     b = make_battle(0, "weak_net")

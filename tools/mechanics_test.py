@@ -209,7 +209,7 @@ print("write range ok")
 
 # CUT-triggered GC: depth-based shockwave damages player and corrupts grid
 from memory_run.runstate import RunState
-r3 = RunState(tutorial=False, seed=7, body_id="tree")
+r3 = RunState(tutorial=False, seed=7, girl_id="deepseek")
 r3.begin_room()
 b3 = create_battle(r3)
 b3.state = "playing"
@@ -236,7 +236,7 @@ assert len(b3.deck.grid.dead) > dead0, "shockwave hit should corrupt grid"
 print("gc shockwave ok")
 
 # melee attack edge: CUT parries and staggers; ignoring it damages the player
-r4 = RunState(tutorial=False, seed=3, body_id="tree")
+r4 = RunState(tutorial=False, seed=3, girl_id="deepseek")
 r4.step = 6  # R03, contains a LUNGER
 r4.begin_room()
 b4 = create_battle(r4)

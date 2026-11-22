@@ -45,7 +45,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.card_uses = {}         # uid -> 本房使用次数
         self.selected = 1           # 默认选中中间手牌
         self.work_used = 0.0
-        self.work_regen = self.run.body.get("regen", 1.7)
+        self.work_regen = self.run.work_regen
         self.quality_penalty = 0.0
         self.quality_drain = 0.0
         self.crash_t = 0.0
@@ -67,7 +67,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
         self.write_cd = 0.0
         self.hp = run.hp
         self.max_hp = run.max_hp
-        self.speed = run.body.get("speed", 268)
+        self.speed = run.speed
         self.iframe = 0.0
         self.dash_cd = 0.0
         self.dash_t = 0.0
@@ -140,7 +140,7 @@ class Battle(InputMixin, ActionsMixin, GcMixin, PlayerMixin, EnemiesMixin):
             g.add_node(n)
         # 玩家是一个真实节点（LINK 的起点、WRITE 的源）
         self.player_node = Node("PLAYER", PLAY.centerx, PLAY.bottom - 120,
-                                "SELF", hp=self.hp, r=PLAYER_R)
+                                self.run.girl["name"], hp=self.hp, r=PLAYER_R)
         self.player_node.immortal = True
         self.player_node.collectible = False
         self.player_node.hostile = False

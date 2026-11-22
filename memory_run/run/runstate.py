@@ -6,7 +6,7 @@ from memory_run.core.cards import Deck, CARD_DEFS
 from memory_run.content import (
     ROOMS, TUTORIALS, TUTORIAL_COUNT, room_for_step, CARD_POOL_ZONE,
     MODULE_POOL, MODULES, MODULE_BY_ID, BOSS_RULES, RUN_ROOMS, ZONE_NAMES,
-    BODIES, BODY_BY_ID,
+    GIRLS, GIRL_BY_ID, GIRL_BASE_STATS, DEFAULT_GIRL_ID,
 )
 from memory_run.const import clamp
 
@@ -16,17 +16,20 @@ EXPANSIONS = [(5, 5), (6, 6), (6, 7), (7, 7), (7, 7), (7, 7)]
 
 
 class RunState:
-    def __init__(self, tutorial=False, seed=None, body_id="tree"):
+    def __init__(self, tutorial=False, seed=None, girl_id=DEFAULT_GIRL_ID):
         self.tutorial = tutorial
         self.seed = seed if seed is not None else random.randrange(1, 10 ** 8)
         self.rng = random.Random(self.seed)
-        self.body = BODY_BY_ID.get(body_id, BODIES[2])
-        self.body_id = self.body["id"]
+        self.girl = GIRL_BY_ID.get(girl_id, GIRLS[0])
+        self.girl_id = self.girl["id"]
         self.deck = Deck()
         self.deck.start()
         # Deck.start 已放 2 CUT / 1 LINK / 1 WEAK；共 7 格占用，留 18 格。
-        self.hp = self.body["hp"]
-        self.max_hp = self.body["hp"]
+        # 四名 AI 娘当前共享基础属性；数据结构不再参与自机选择。
+        self.max_hp = GIRL_BASE_STATS["hp"]
+        self.hp = self.max_hp
+        self.speed = GIRL_BASE_STATS["speed"]
+        self.work_regen = GIRL_BASE_STATS["regen"]
         self.refs = REF_START
         self.shards = 0
         self.score = 0

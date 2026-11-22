@@ -11,7 +11,7 @@ import pygame
 from memory_run.const import *
 from memory_run.platform import audio
 from memory_run.core.cards import CARD_DEFS
-from memory_run.content import TUTORIAL_COUNT, RUN_ROOMS
+from memory_run.content import TUTORIAL_COUNT, RUN_ROOMS, DEFAULT_GIRL_ID
 from memory_run.ui.battle_factory import create_battle
 from memory_run.run.runstate import RunState
 from memory_run.ui.deckui import DeckEditor
@@ -47,7 +47,7 @@ class App:
         self.clock = pygame.time.Clock()
         self.t = 0.0
         self.state = "title"
-        self.body_id = "tree"
+        self.girl_id = DEFAULT_GIRL_ID
         self.run = None
         self.battle = None
         self.editor = None
@@ -75,7 +75,7 @@ class App:
 
     # ================================================================ 流程
     def new_run(self, tutorial=False):
-        self.run = RunState(tutorial=tutorial, body_id=self.body_id)
+        self.run = RunState(tutorial=tutorial, girl_id=self.girl_id)
         self.safehouse = False
         self.prep_context = "initial"
         self.state = "deck"
@@ -135,7 +135,7 @@ class App:
 
     def retry(self):
         self.run.restore_room_snapshot()
-        self.run.hp = max(20, int(self.run.body["hp"] * 0.55))
+        self.run.hp = max(20, int(self.run.max_hp * 0.55))
         self.start_battle()
 
     def finish_room(self, skip_safehouse=False):
@@ -207,7 +207,7 @@ class App:
         self.run.tutorial = False
         self.run.tutorial_done = True
         self.run.step = TUTORIAL_COUNT
-        self.run.hp = self.run.body["hp"]
+        self.run.hp = self.run.max_hp
         self.run.refs = 3
         self.run.shards += 1
         self.run.deck.add("ECC")
@@ -287,8 +287,8 @@ class App:
                 self.state = "help"
             elif k == "quit":
                 self.quit()
-            elif k and k.startswith("body_"):
-                self.body_id = k[5:]
+            elif k and k.startswith("girl_"):
+                self.girl_id = k[5:]
 
     def ev_help(self, ev):
         if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
@@ -578,7 +578,7 @@ class App:
     def draw(self):
         self.screen.fill((6, 8, 12))
         if self.state == "title":
-            self.ui = draw_title(self.screen, self.t, self.body_id)
+            self.ui = draw_title(self.screen, self.t, self.girl_id)
         elif self.state == "help":
             self.ui = draw_help(self.screen)
         elif self.state == "deck":
@@ -697,7 +697,7 @@ class App:
         self.state = "title"
         self.draw()
         pygame.image.save(self.screen, os.path.join(outdir, "01_title.png"))
-        self.run = RunState(tutorial=False, body_id="tree")
+        self.run = RunState(tutorial=False, girl_id=self.girl_id)
         self.state = "deck"
         self.editor = DeckEditor(self.run)
         self.draw()

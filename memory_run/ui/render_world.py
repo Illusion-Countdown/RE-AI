@@ -245,8 +245,6 @@ class WorldMixin:
             self.shape_eraser(surf, n, x, y, col, hover)
         elif n.kind == "LUNGER":
             self.shape_alloc(surf, n, x, y, col, hover)
-        elif n.kind == "SLASHER":
-            self.shape_sentinel(surf, n, x, y, col, hover)
         elif n.kind == "EXECUTOR":
             self.shape_cycler(surf, n, x, y, col, hover)
         elif n.kind == "SENTINEL":

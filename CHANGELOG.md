@@ -12,6 +12,7 @@ Alpha 阶段不保证存档/接口兼容。
 
 ### Changed
 
+- 精简运行时层普通敌人：删除 `GLITCH` / `TEAR` / `SLASHER`，同步调整 R05 / R06 / R07 / R10 编成；普通敌人从 15 种降为 12 种
 - 自机改为 AI 娘：标题界面选择 DeepSeek / Claude / GPT / Gemini，战斗画面显示所选 AI 娘；数据结构退出自机选择，只保留为运行时层的世界内容
 - 战斗表现/音频改为每场独立事件总线：`Battle` 只发语义事件，`ui/battle_fx.py` 与 `platform/audio_feedback.py` 各自监听；战斗层不再直接调用 FX/audio
 - 顿帧/慢放拆到 `battle/clock.py`，`Battle` 只依赖窄时钟接口

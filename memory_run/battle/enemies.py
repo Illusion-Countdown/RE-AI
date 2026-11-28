@@ -99,7 +99,7 @@ class EnemiesMixin:
             if n.data.get("boss"):
                 self.update_boss(n, dt)
                 continue
-            if n.kind in ("LUNGER", "SLASHER", "EXECUTOR"):
+            if n.kind in ("LUNGER", "EXECUTOR"):
                 self.update_melee(n, dt)
                 continue
             if n.kind == "MINION":
@@ -136,11 +136,6 @@ class EnemiesMixin:
                 self.enemy_move(n, dt, 60.0, 90.0)
             elif n.kind == "QUANTIZER":
                 self.enemy_attack(n, dt, 3.0, 170, 4.0, GREEN)
-            elif n.kind == "GLITCH":
-                self.enemy_move(n, dt, 90.0, 140.0)
-                self.enemy_attack(n, dt, 2.4, 180, 4.0, PURPLE)
-            elif n.kind == "TEAR":
-                self.enemy_attack(n, dt, 2.8, 200, 5.0, RED)
             elif n.kind == "CRAWLER":
                 self.enemy_move(n, dt, 110.0, 120.0)
                 self.enemy_attack(n, dt, 2.8, 180, 5.0, AMBER, necro=True)
@@ -150,7 +145,6 @@ class EnemiesMixin:
     def update_melee(self, n, dt):
         cfg = {
             "LUNGER":   (150.0, 62.0, 0.45, 150.0, 10.0, 2.6),
-            "SLASHER":  (110.0, 74.0, 0.65, 175.0, 16.0, 3.0),
             "EXECUTOR": (85.0, 90.0, 0.85, 205.0, 24.0, 3.6),
         }[n.kind]
         speed, keep, windup, reach, dmg, period = cfg

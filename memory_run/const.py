@@ -57,7 +57,6 @@ KIND_COLOR = {
     "LEAK":      (92, 100, 96),
     "HIJACK":    GREEN,
     "LUNGER":    AMBER,
-    "SLASHER":   RED,
     "EXECUTOR":  GOLD,
 }
 
